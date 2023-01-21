@@ -1,6 +1,0 @@
-\contentsline {subsection}{Question \#1}{2}{section*.2}%
-\contentsline {subsection}{Question \#2}{3}{section*.3}%
-\contentsline {subsection}{Question 3 (ADA 1.2)}{5}{section*.4}%
-\contentsline {subsection}{Question 4 (ADA 1.7)}{6}{section*.5}%
-\contentsline {subsection}{Question 5 (ADA 1.8)}{7}{section*.6}%
-\contentsline {subsection}{Question 6 (ESL 2.8)}{8}{section*.7}%
