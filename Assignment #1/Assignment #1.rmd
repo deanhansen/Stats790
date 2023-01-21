@@ -7,7 +7,6 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   pdf_document:
     toc: true
-bibliography: STATS790.bib
 fontsize: 11pt
 geometry: margin = 1in
 linestretch: 1.5
