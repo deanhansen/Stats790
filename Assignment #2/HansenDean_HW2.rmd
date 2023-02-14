@@ -109,31 +109,13 @@ fit_model <- function(x, y, type = c("naive", "svd", "qr")) {
       fit$coef <- fit$hat %*% y
     }
     if (type == "qr") {
-      svd_x <- svd(x)
-      fit$hat <- svd_x$u %*% t(svd_x$u)
+      qr_x <- qr(x)
+      fit$hat <- solve.qr(qr_x, y)
       fit$coef <- fit$hat %*% y
     }
 }
 
-rnorm(ncol(x))
-
-simfun <- function(n, p) {
-    y <- rnorm(n)
-    X <- matrix(rnorm(p*n), ncol = p)
-    list(X = X, y = y)
-}
-
-s <- simfun(1000, 10)
-## a test to make sure we get the same coefficients -- FAILS in this case
-## (also see the 'check' argument of microbenchmark())
-stopifnot(all.equal(lm.fit(s$X, s$y)$coefficients,
-                    my_lm(s$X, s$y)))
-## consider setting the `times` argument to a value less than the default of 100
-## if the individual fits are too slow
-m <- microbenchmark(
-    lm.fit(s$X, s$y),
-    my_lm(s$X, s$y))
-results <- summary(m) ## store the components you need from this    
+#different magnitudes
 
 ```
 
@@ -164,24 +146,21 @@ df_scaled <- cbind(df_x_scaled,
                    outcome = df[,9],
                    train = as.numeric(df[,10])) %>% as_tibble()
 
-df_train <- df_scaled %>% filter(train == 1) %>% select(-train)
-df_test <- df_scaled %>% filter(train == 0) %>% select(-train)
-
-train_x <- df_train %>% select(-outcome) %>% as.matrix()
-train_y <- df_train %>% select(outcome) %>% as.matrix()
-
-test_x <- df_test %>% select(-outcome) %>% as.matrix()
-test_y <- df_test %>% select(outcome) %>% as.matrix()
+df_scaled_x <- df_scaled %>% select(-train, -outcome) %>% as.matrix()
+df_scaled_y <- df_scaled %>% select(outcome) %>% as.matrix()
 
 
 # data augmentation defined fit
-my_ridge <- function(x, y, alpha, niter = 1000) {
+my_ridge <- function(x, y, alpha) {
   y_prime <- append(y, seq(1, 1, length.out = length(y)))
 }
 
 
 # glmnet implementation
-native_ridge <- glmnet(x = train_x, y = train_y, alpha = 0)
+native_ridge <- glmnet(x = df_scaled_x, y = df_scaled_y, alpha = 0)
+cv_native_ridge <- cv.glmnet(x = df_scaled_x, df_scaled_y, alpha = 0)
+optimal_lambda <- cv_native_ridge$lambda.min
+optimal_lambda
 ```
 
 \newpage
@@ -217,12 +196,9 @@ From the notes, we have that the Ridge weights are of the form $\tfrac{d^2_j}{d^
 For Lasso, the same will hold, since as we relax the penalty, the coefficients should increase towards the usual least squares estimate.
 
 \newpage
-## Question 5 (ESL 3.28)
+## Question 5 (ESL 3.28) & Question 6 (ESL 3.30)
 
 
-
-\newpage
-## Question 6 (ESL 3.30)
 
 
 
