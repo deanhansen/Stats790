@@ -88,34 +88,73 @@ The Cholesky decomposition assumes the design matrix $X$ can be written in the f
 
 Thus, the Cholesky decomposition gives coefficients for $\beta$ as $\hat{\beta}=(LL')^{-1}y$.
 
-b) Below we define and use a function which implements the above for general x and y.
+b) Below we define and use a function which implements the above for general X and y.
 
 ```{r}
 set.seed(101)
 
 #load required packages
-library(microbenchmark)
-library(rbenchmark)
+#library(microbenchmark)
+#library(rbenchmark)
 
-fit_model <- function(x, y, type = c("naive", "svd", "qr")) {
-  type = match.arg(type)
-    if (type == "naive") {
-      fit$hat <- x %*% solve(t(x) %*% x) %*% t(x)
-      fit$coef <- fit$hat %*% y
-    }
-    if (type == "svd") {
-      svd_x <- svd(x)
-      fit$hat <- svd_x$u %*% t(svd_x$u)
-      fit$coef <- fit$hat %*% y
-    }
-    if (type == "qr") {
-      qr_x <- qr(x)
-      fit$hat <- solve.qr(qr_x, y)
-      fit$coef <- fit$hat %*% y
-    }
+fit_naive <- function(x, y) { 
+  x %*% solve(t(x) %*% x) %*% t(x) %*% y
+}
+
+fit_svd <- function(x, y) { 
+  svd(x)$u %*% t(svd(x)$u) %*% y
+}
+
+fit_qr <- function(x, y) { 
+  t(t(solve.qr(qr(x), y)))
 }
 
 #different magnitudes
+simfun <- function(n, p) {
+    y <- rnorm(n)
+    X <- matrix(rnorm(p*n), ncol = p)
+    list(X = X, y = y)
+}
+
+s <- simfun(1000, 10)
+
+## consider setting the `times` argument to a value less than the default of 100
+## if the individual fits are too slow
+m <- microbenchmark(
+    lm.fit(s$X, s$y),
+    fit_naive(s$X, s$y))
+results <- summary(m)  
+
+m_qr <- microbenchmark(
+    lm.fit(s$X, s$y),
+    fit_qr(s$X, s$y))
+results_qr <- summary(m_qr) 
+
+m_svd <- microbenchmark(
+    lm.fit(s$X, s$y),
+    fit_svd(s$X, s$y))
+results_svd <- summary(m_svd)  
+
+nvec <- round(10^seq(2, 5, by = 0.25))
+
+## set aside some storage for the results ...
+for (i in seq_along(n)) {
+    s <- simfun(nvec[i], p = 10)
+    m <- microbenchmark(
+    lm.fit(s$X, s$y),
+    fit_naive(s$X, s$y))
+results <- summary(m)  
+
+m_qr <- microbenchmark(
+    lm.fit(s$X, s$y),
+    fit_qr(s$X, s$y))
+results_qr <- summary(m_qr) 
+
+m_svd <- microbenchmark(
+    lm.fit(s$X, s$y),
+    fit_svd(s$X, s$y))
+results_svd <- summary(m_svd)  
+}
 
 ```
 
@@ -151,10 +190,11 @@ df_scaled_y <- df_scaled %>% select(outcome) %>% as.matrix()
 
 
 # data augmentation defined fit
-my_ridge <- function(x, y, alpha) {
+my_ridge <- function(x, y) {
   y_prime <- append(y, seq(1, 1, length.out = length(y)))
+  x <- rbind(x, diag(x = 1, nrow = dim(x)))
+  hat <- qr.solve(x, y_prime)
 }
-
 
 # glmnet implementation
 native_ridge <- glmnet(x = df_scaled_x, y = df_scaled_y, alpha = 0)
@@ -196,7 +236,13 @@ From the notes, we have that the Ridge weights are of the form $\tfrac{d^2_j}{d^
 For Lasso, the same will hold, since as we relax the penalty, the coefficients should increase towards the usual least squares estimate.
 
 \newpage
-## Question 5 (ESL 3.28) & Question 6 (ESL 3.30)
+## Question 5 (ESL 3.28)
+
+See file titled 'Q5.pdf' in github folder.
+
+## Question 6 (ESL 3.30)
+
+See file titled 'Q6.pdf' in github folder.
 
 
 
