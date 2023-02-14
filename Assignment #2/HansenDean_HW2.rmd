@@ -91,11 +91,9 @@ Thus, the Cholesky decomposition gives coefficients for $\beta$ as $\hat{\beta}=
 b) Below we define and use a function which implements the above for general X and y.
 
 ```{r}
-set.seed(101)
-
 #load required packages
-#library(microbenchmark)
-#library(rbenchmark)
+library(microbenchmark)
+library(rbenchmark)
 
 fit_naive <- function(x, y) { 
   x %*% solve(t(x) %*% x) %*% t(x) %*% y
@@ -117,10 +115,15 @@ simfun <- function(n, p) {
 }
 
 s <- simfun(1000, 10)
+nvec <- round(10^seq(2, 5, by = 0.25))
 
-## consider setting the `times` argument to a value less than the default of 100
-## if the individual fits are too slow
-m <- microbenchmark(
+
+## set aside some storage for the results ...
+n <- 1000
+
+for (i in seq_along(n)) {
+    s <- simfun(nvec[i], p = 10)
+    m <- microbenchmark(
     lm.fit(s$X, s$y),
     fit_naive(s$X, s$y))
 results <- summary(m)  
@@ -134,12 +137,14 @@ m_svd <- microbenchmark(
     lm.fit(s$X, s$y),
     fit_svd(s$X, s$y))
 results_svd <- summary(m_svd)  
+}
 
-nvec <- round(10^seq(2, 5, by = 0.25))
 
 ## set aside some storage for the results ...
+n <- 10000
+
 for (i in seq_along(n)) {
-    s <- simfun(nvec[i], p = 10)
+    s <- simfun(nvec[i], p = 100)
     m <- microbenchmark(
     lm.fit(s$X, s$y),
     fit_naive(s$X, s$y))
@@ -160,10 +165,6 @@ results_svd <- summary(m_svd)
 
 
 Plotting on log-log scale the scaling behaviour of each method.
-
-```{r, message=FALSE}
-
-```
 
 
 \newpage
