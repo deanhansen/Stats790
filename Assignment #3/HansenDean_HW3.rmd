@@ -274,11 +274,22 @@ For $X \ge \xi_K$ and $K-2 \ge k$, we have the following:
 \begin{align}
 N_{k+2}(X) &= d_k(X)-d_{K-1}(X)\\
 &= \tfrac{(X-\xi_k)^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_k} - \tfrac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}}\\
+&= \tfrac{X^3 - 3\xi_k X^2 + 3 \xi_k^2 X - \xi_k^3 - X^3 + 3\xi_K X^2 - 3 \xi_K^2 X + \xi_K^3}{\xi_K - \xi_k} - \tfrac{X^3 - 3\xi_{K-1} X^2 + 3 \xi_{K-1}^2 X - \xi_{K-1}^3 - X^3 + 3\xi_K X^2 - 3 \xi_K^2 X + \xi_K^3}{\xi_K - \xi_{K-1}}\\
+&= \tfrac{(- 3\xi_k + 3\xi_K) X^2 + (3 \xi_k^2 - 3 \xi_K^2 ) X + (\xi_K^3 - \xi_k^3)}{\xi_K - \xi_k} - \tfrac{(-3\xi_{K-1} + 3\xi_K) X^2 + (3\xi_{K-1}^2 - 3 \xi_K^2) X + (\xi_K^3 - \xi_{K-1}^3)}{\xi_K - \xi_{K-1}}\\
+&= \tfrac{3(\xi_K - \xi_k) X^2 + 3 (\xi_k^2 - \xi_K^2 ) X + (\xi_K^3 - \xi_k^3)}{\xi_K - \xi_k} - \tfrac{3 (\xi_K -\xi_{K-1}) X^2 + 3(\xi_{K-1}^2 - \xi_K^2) X + (\xi_K^3 - \xi_{K-1}^3)}{\xi_K - \xi_{K-1}}\\
+&= 3X^2 - 3 X^2 + \tfrac{3 (\xi_k^2 - \xi_K^2 ) X + (\xi_K^3 - \xi_k^3)}{\xi_K - \xi_k} - \tfrac{3(\xi_{K-1}^2 - \xi_K^2) X + (\xi_K^3 - \xi_{K-1}^3)}{\xi_K - \xi_{K-1}}\\
+&= \tfrac{3 (\xi_k + \xi_K)(\xi_k - \xi_K) X + (\xi_K - \xi_k)(\xi_K^2 +  2\xi_K \xi_k + \xi_k^2)}{\xi_K - \xi_k} - \tfrac{3(\xi_{K-1} + \xi_K)(\xi_{K-1} - \xi_K) X + (\xi_K - \xi_{K-1})(\xi_K^2 + 2\xi_K \xi_{K-1} + \xi_{K-1}^2)}{\xi_K - \xi_{K-1}}\\
+&= \tfrac{-3 (\xi_k + \xi_K)(\xi_K - \xi_k) X}{\xi_K - \xi_k}  + \tfrac{(\xi_K - \xi_k)(\xi_K^2 +  2\xi_K \xi_k + \xi_k^2)}{\xi_K - \xi_k} + \tfrac{3(\xi_{K-1} + \xi_K)(\xi_K - \xi_{K-1}) X}{\xi_K - \xi_{K-1}} - \tfrac{(\xi_K - \xi_{K-1})(\xi_K^2 + 2\xi_K \xi_{K-1} + \xi_{K-1}^2)}{\xi_K - \xi_{K-1}}\\
+&= -3 (\xi_k + \xi_K)X  + (\xi_K^2 +  2\xi_K \xi_k + \xi_k^2) + 3(\xi_{K-1} + \xi_K) X - (\xi_K^2 + 2\xi_K \xi_{K-1} + \xi_{K-1}^2)\\
+&= (2\xi_K \xi_k + \xi_k^2 - 2\xi_K \xi_{K-1} - \xi_{K-1}^2) + 3((\xi_{K-1} + \xi_K) - (\xi_k + \xi_K)) X \\
+&= b + m X
 \end{align}
 ```
 
+This shows that $f(X)$ is linear past the last boundary knot as required.
 
-Before showing the recursion relation holds, we need two identities. The first identity is the following:
+\newpage
+Before showing the recursion relation holds for the basis, we need two identities. The first identity is from the first section of the proof:
 
 ```{=latex}
 \begin{align}
