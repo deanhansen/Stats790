@@ -308,6 +308,30 @@ The second identity follows in the same way:
 \end{align}
 ```
 
+We know from the basis that for the $N_{K+2}(X)$ coefficients, the remaining term should be $\sum^{K}_{k=1} \theta_k (X-\xi_k)^3_+$. For this to happen, we need to multiply the coefficients by a factor of $(\xi_K-\xi_k)$. To see this, we now derive the last part of the basis as follows:
+
+```{=latex}
+\begin{align}
+(\xi_K-\xi_k) \sum^{K-2}_{k=1} \theta_k N_{K+2}(X) &=\sum^{K-2}_{k=1} \theta_k (\xi_K-\xi_k) [\frac{(X-\xi_k)^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_k} - \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}}]\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+
+- \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} \sum^{K-2}_{k=1} \theta_k (\xi_K-\xi_k)
+\end{align}
+```
+
+Using the derived identities from above we get:
+
+```{=latex}
+\begin{align}
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ - \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} (\xi_K \sum^{K-2}_{k=1} \theta_k - \sum^{K-2}_{k=1} \theta_k \xi_k)\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ - \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} (- \theta_K \xi_K - \theta_{K-1} \xi_K + \theta_K \xi_K + \theta_{K-1} \xi_{K-1})\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ - \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} (- \theta_{K-1} \xi_K + \theta_{K-1} \xi_{K-1})\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ + \theta_{K-1} \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} (\xi_K - \xi_{K-1})\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ + \theta_{K-1} ((X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+) (\xi_K - \xi_{K-1})\\
+\end{align}
+```
+
+The far right r
+
 \newpage
 ## Question #6 (ESL 5.13)
 
