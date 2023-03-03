@@ -63,7 +63,7 @@ knitr::include_graphics("figure_5-6.png")
 
 Here we compute a logistic regression model using the b-spline, natural spline and truncated power basis functions.
 
-Custom knots were defined prior to fitting each model as the splines package defaults would produce NA values in the covariance matrix. Further, for the truncated power basis, the left knot was moved to $0.30$ as NA values appeared again in the covariance matrix.
+Custom knots were defined prior to fitting each model as the splines package defaults would produce NA values in the covariance matrix and the truncated power basis function did as well unless the lowest knot was moved to $0.30$. Thus, all knots have been placed at the same quantiles so the basis can be compared easily.
 
 \tiny
 ```{r}
@@ -75,19 +75,19 @@ raw_dd <- read.csv(fn, row.names = 1)
 dd <- raw_dd %>% select(tobacco, chd)
 
 #b-spline basis
-b_spline_fit <- gam(chd ~ bs(x = tobacco, knots = quantile(tobacco, seq(0.25,0.85,length=5))), family = binomial, data = dd)
+b_spline_fit <- gam(chd ~ bs(x = tobacco, knots = quantile(tobacco, seq(0.30,0.85,length=5))), family = binomial, data = dd)
 b_spline_X <- model.matrix(b_spline_fit)
 vcov_b <- vcov(b_spline_fit)
 
 #natural spline basis
-natural_spline_fit <- gam(chd ~ ns(x = tobacco, knots = quantile(tobacco, seq(0.25,0.85,length=5))), family = binomial, data = dd)
+natural_spline_fit <- gam(chd ~ ns(x = tobacco, knots = quantile(tobacco, seq(0.30,0.85,length=5))), family = binomial, data = dd)
 natural_spline_X <- model.matrix(natural_spline_fit)
 vcov_natural <- vcov(natural_spline_fit)
 
 #truncated power basis
 q2 <- function(x, nknots) {
   knots <- quantile(x, seq(0.30, 0.85, length = nknots))
-  trunc_fun <- function(k) (x>k)*(x-k)^3
+  trunc_fun <- function(k) (x>=k)*(x-k)^3
   s <- sapply(knots, trunc_fun)
   s <- cbind(x, x^2, x^3, s)
   return(s)
@@ -165,19 +165,19 @@ Below we create a function that implements the truncated power basis and natural
 ```{r}
 truncpolyspline <- function(x, df, natural = c(TRUE, FALSE)) {
   if (!require("Matrix")) stop("need Matrix package")
-
+  
   #truncated power basis
   if(!natural) {
-    knots <- quantile(x, seq(0, 1, length = df-1))
-    trunc_fun <- function(k) (x>=k)*(x-k)^3
-    s <- sapply(knots[1:(df-2)], trunc_fun)
-    s <- cbind(x, x^2, s)
-    return(s)
+  knots <- quantile(x, seq(0.25, 0.85, length = df - 4))
+  trunc_fun <- function(k) (x>=k)*(x-k)^3
+  s <- sapply(knots, trunc_fun)
+  s <- cbind(x, x^2, x^3, s)
+  return(s)
   }
   
   #natural spline basis
   if(natural) {
-    knots <- quantile(x, seq(0, 1, length = df-1))
+    knots <- quantile(x, seq(0.25, 0.85, length = df))
     
     trunc_fun <- function(k, K) ((x>=k)*(x-k)^3 - (x>=K)*(x-K)^3)/(K-k)
     
@@ -187,27 +187,25 @@ truncpolyspline <- function(x, df, natural = c(TRUE, FALSE)) {
     d_K_1 <- ((x>=K_1)*(x-K_1)^3 - (x>=K)*(x-K)^3)/(K-K_1)
     
     s <- sapply(knots[1:(df-2)],trunc_fun,K=K)
-    s <- cbind(1,x,s)
+    s <- cbind(x, s)
     return(s)
   }
 }
+
 ```
 \normalsize
+
+Below we plot the basis functions for $df=5$.
 
 \newpage
 \tiny
 ```{r}
-xvec <- seq(0, 1, length = 101)
-tS_natural <- truncpolyspline(xvec, df = 5, natural = TRUE)
-matplot(scale(tS_natural), type = "l", ylab = "Natural Basis")
-```
-\normalsize
-
-\newpage
-\tiny
-```{r}
-tS_power <- truncpolyspline(xvec, df = 5, natural = FALSE)
-matplot(scale(tS_power), type = "l", ylab = "Truncated Basis")
+xvec <- seq(0, 10, length = 101)
+nat <- truncpolyspline(xvec, df = 5, natural = TRUE)
+unnat <- truncpolyspline(xvec, df = 5, natural = FALSE)
+par(mfrow = c(1, 2))
+matplot(scale(nat), type = "l", main = "Natural")
+matplot(scale(unnat), type = "l", main = "Regular")
 ```
 \normalsize
 
