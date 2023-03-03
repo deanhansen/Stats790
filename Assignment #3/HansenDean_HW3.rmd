@@ -14,12 +14,12 @@ linestretch: 1.5
 ---
 
 ```{r, include=FALSE}
-#load packages for workflow
 library(mgcv)
 library(splines)
 library(dplyr)
 library(gam)
 library(ggplot2)
+library(Matrix)
 ```
 
 \newpage
@@ -326,11 +326,15 @@ Using the derived identities from above we get:
 &=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ - \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} (- \theta_K \xi_K - \theta_{K-1} \xi_K + \theta_K \xi_K + \theta_{K-1} \xi_{K-1})\\
 &=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ - \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} (- \theta_{K-1} \xi_K + \theta_{K-1} \xi_{K-1})\\
 &=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ + \theta_{K-1} \frac{(X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+}{\xi_K - \xi_{K-1}} (\xi_K - \xi_{K-1})\\
-&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - \sum^{K-2}_{k=1} \theta_k (X-\xi_K)^3_+ + \theta_{K-1} ((X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+) (\xi_K - \xi_{K-1})\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - (X-\xi_K)^3_+ \sum^{K-2}_{k=1} \theta_k + \theta_{K-1} ((X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+)\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ - (X-\xi_K)^3_+ (-\theta_K - \theta_{K-1}) + \theta_{K-1} ((X-\xi_{K-1})^3_+ - (X-\xi_K)^3_+)\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ + \theta_K (X-\xi_K)^3_+ + \theta_{K-1} (X-\xi_K)^3_+ + \theta_{K-1} (X-\xi_{K-1})^3_+ - \theta_{K-1} (X-\xi_K)^3_+\\
+&=\sum^{K-2}_{k=1} \theta_k (X-\xi_k)^3_+ + \theta_K (X-\xi_K)^3_+ + \theta_{K-1} (X-\xi_{K-1})^3_+\\
+&=\sum^{K}_{k=1} \theta_k (X-\xi_k)^3_+
 \end{align}
 ```
 
-The far right r
+Thus, $\alpha_k=(\xi_K - \xi_k)\theta_k$ and we have shown the two basis representations are equivalent.
 
 \newpage
 ## Question #6 (ESL 5.13)
