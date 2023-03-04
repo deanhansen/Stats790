@@ -213,21 +213,6 @@ matplot(scale(unnat), type = "l", main = "Regular")
 \normalsize
 
 \newpage
-
-We can plot more basis functions by increasing $df$.
-
-\tiny
-```{r}
-xvec <- seq(0, 10, length = 101)
-nat <- truncpolyspline(xvec, df = 8, natural = TRUE)
-unnat <- truncpolyspline(xvec, df = 8, natural = FALSE)
-par(mfrow = c(1, 2))
-matplot(scale(nat), type = "l", main = "Natural")
-matplot(scale(unnat), type = "l", main = "Regular")
-```
-\normalsize
-
-\newpage
 ## Question #4
 
 a) Here we create a function that simulates $n$ points plus Gaussian noise from the function $f(x,y) = \pi + \exp(-(x^2 + 2xy + y^2))$ .
@@ -241,57 +226,89 @@ my_function <- function(x,y) {pi + exp(-(x^2 + x*y + y^2))}
 sim_values <- function(n = 1000) {
   x <- runif(n)
   y <- runif(n)
-  z <- my_function(x,y) + rnorm(n)
-  
+  eps <- rnorm(n)
+  z <- my_function(x,y) + eps
   return(data.frame(x=x,y=y,z=z))
 }
 ```
 \normalsize
 
-b) Use mgcv::gam() to fit two-dimensional splines to your simulated data, using z ~ te(gp, x, y). Over an ensemble of 250 simulations, compute the average computation time, bias, variance, and mean-squared error of your predictions for (i) method = "GCV.Cp" (generalized cross-validation) and (ii) method = "REML" (restricted maximum likelihood).
+b) Below we run an ensemble of $250$ simulations and print the results for average time, bias, variance and mean-squared error for "GCV.cp" and "REML".
 
-\tinytext
-```{r}
+\tiny
+```{r, warning=FALSE, message=FALSE}
 
-simulation <- function() {
+simulation <- function(k) {
+
+#allocate exact space...
+  gcv_time <- rep(0, length=k)
+  gcv_bias <- rep(0, length=k)
+  gcv_var <- rep(0, length=k)
+  gcv_mse <- rep(0, length=k)
   
-  #should allocate exact space...
-  gcv_time <- c()
-  reml_time <- c()
+  reml_time <- rep(0, length=k)
+  reml_bias <- rep(0, length=k)
+  reml_var <- rep(0, length=k)
+  reml_mse <- rep(0, length=k)
 
-for (i in 1:250) {  
+#run inner for loop k times
+  for (i in 1:k) {
 
-  x <- runif(1000)
-  y <- runif(1000))
-  z <- my_function(x,y) + rnorm(1000)
-  data <- data.frame(x,y,z)
+  #simulate data
+    data <- sim_values()
   
-  #gcv
-  gcv_start <- Sys.time()
-  gcv <- mgcv::gam(z ~ te(x,y), data = data, method = "GCV.Cp")
-  gcv_end <- Sys.time()
-  gcv_time[i] <- gcv_end - gcv_start
-  gcv_pred <- predict(gcv, newdata = df, type = "reponse")
+  #GCV fit
+    gcv_start <- Sys.time()
+    gcv <- mgcv::gam(z ~ te(x,y), data = data, method = "GCV.Cp")
+    gcv_end <- Sys.time()
+    gcv_pred <- predict(gcv, newdata = data, type = "reponse")
+  
+  #store GCV values
+    gcv_time[i] <- gcv_end - gcv_start
+    gcv_bias[i] <- mean(gcv_pred - data$z)
+    gcv_var[i] <- var(gcv_pred - data$z)
+    gcv_mse[i] <- mean((gcv_pred - data$z)^2)
 
-#REML fit times
-reml_start <- Sys.time()
-reml <- mgcv::gam(z ~ te(x,y), data = data, method = "REML")
-reml_end <- Sys.time()
-reml_time[i] <- reml_end - reml_start
-
-reml_pred <- predict(reml, newdata = data, type = "reponse")
-reml_bias <- mean(reml_pred - df$z)
-reml_var <- var(reml_pred - df$z)
+  #REML fit
+    reml_start <- Sys.time()
+    reml <- mgcv::gam(z ~ te(x,y), data = data, method = "REML")
+    reml_end <- Sys.time()
+    reml_pred <- predict(reml, newdata = data, type = "reponse")
+  
+  #store REML values
+    reml_time[i] <- reml_end - reml_start
+    reml_bias[i] <- mean(reml_pred - data$z)
+    reml_var[i] <- var(reml_pred - data$z)
+    reml_mse[i] <- mean((reml_pred - data$z)^2)
+  }
+  
+#GCV
+  avg_gcv_time <- mean(gcv_time)
+  avg_gcv_bias <- mean(gcv_bias)
+  avg_gcv_var <- mean(gcv_var)
+  avg_gcv_mse <- mean(gcv_mse)
+  
+#REML
+  avg_reml_time <- mean(reml_time)
+  avg_reml_bias <- mean(reml_bias)
+  avg_reml_var <- mean(reml_var)
+  avg_reml_mse <- mean(reml_mse)
+  
+#return full set of results in table
+  results <- data.frame(method = c("GCV.Cp", "REML"),
+                        time = c(avg_gcv_time, avg_reml_time),
+                        bias = c(avg_gcv_bias, avg_reml_bias),
+                        var = c(avg_gcv_var, avg_reml_var),
+                        mse = c(avg_gcv_mse, avg_reml_mse))
+  return(results)
 }
-  
 
+#run for 250 simulations and print results
+simulation(k = 250)
 ```
 \normalsize
 
-
-```{r, include=FALSE}
-sim_results
-```
+From the results, we see the GCV.cp is faster than the REML method, and both methods provide similar average bias, variance and mean-squared error values.
 
 \newpage
 ## Question #5 (ESL 5.4)
@@ -387,7 +404,7 @@ Using the derived identities from above we get:
 \end{align}
 ```
 
-Thus, $\alpha_{k+2}=(\xi_K - \xi_k)\theta_k$ for $k$ from $1$ to $K-2$. Therefore, we have shown the two basis are equivalent and that $f(X)= \sum^{3}_{j=0} \beta_jX^j + \sum^{K}_{k=1} \theta_k (X-\xi_k)^3_+$ can be written as $f(X)= \sum^{K}_{k=1} \alpha_k N_{k}(X)$ for above $\alpha_k$.
+Thus, $\alpha_{k+2}=(\xi_K - \xi_k)\theta_k$ for $k$ from $1$ to $K-2$. We have shown the two basis are equivalent and that $f(X)= \sum^{3}_{j=0} \beta_jX^j + \sum^{K}_{k=1} \theta_k (X-\xi_k)^3_+$ can be written as $f(X)= \sum^{K}_{k=1} \alpha_k N_{k}(X)$ for above $\alpha_k$.
 
 \newpage
 ## Question #6 (ESL 5.13)
