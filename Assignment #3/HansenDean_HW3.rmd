@@ -220,7 +220,7 @@ a) Here we create a function that simulates $n$ points plus Gaussian noise from 
 \tiny
 ```{r}
 #function over unit square
-my_function <- function(x,y) {pi + exp(-(x^2 + x*y + y^2))}
+my_function <- function(x,y) {pi + exp(-(x^2 + 2*x*y + y^2))}
 
 #get values with noise
 sim_values <- function(n = 1000) {
