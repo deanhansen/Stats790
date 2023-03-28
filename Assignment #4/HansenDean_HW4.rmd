@@ -1,0 +1,67 @@
+---
+title: |
+  | STATS 790
+  | Assignment #3
+author: "Dean Hansen - 400027416"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+mainfont: SourceSansPro
+output: 
+  pdf_document:
+    toc: true
+fontsize: 11pt
+geometry: margin = 1in
+linestretch: 1.5
+---
+
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+library(psychTools)
+library(ggplot2)
+library(tidymodels)
+library(dbarts)
+```
+
+\newpage
+## Question #1
+
+\tiny
+```{r}
+epi_bfi <- epi.bfi
+
+#plot
+psych::pairs.panels(epi_bfi[,1:5])
+
+#Preprocessing
+df_rec <- recipe(epiE ~ ., data = epi_bfi)
+
+#BART
+df_spec <- 
+  parsnip::bart() %>% 
+  set_engine("dbarts") %>% 
+  set_mode("regression")
+
+#Workflow
+df_wf <- 
+  workflow() %>% 
+  add_recipe(df_rec) %>% 
+  add_model(df_spec)
+
+#cross-validation for resamples
+set.seed(1)
+df_folds <- vfold_cv(epi_bfi)
+
+#Resampling for the accuracy metrics
+set.seed(2)
+df_rs <- df_wf %>% 
+  fit_resamples(resamples = df_folds)
+
+#Computes the accuracy metrics  
+collect_metrics(df_rs)
+```
+\normalsize
+
+
+\newpage
+## Question #2
+
+
+
