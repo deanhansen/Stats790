@@ -194,20 +194,28 @@ We have the following identities:
 \text{log}(\frac{p}{1-p})&=\text{log}(p) - \text{log}(1-p) = \text{log}(e^z)=f_{m-1}(x_i) + \gamma_{jm}
 \end{align}
 ```
+
 Plugging this back into the last line, we can take the derivative to find the optimal weight as follows:
 
 ```{=latex}
 \begin{align}
 0 &= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i (f_{m-1}(x_i) + \gamma_{jm}) + \text{log}(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})]\\
 0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}})\\
-0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{1}{1 + e^{-(f_{m-1}(x_i) + \gamma_{jm})}})\\
-0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{1}{1 + e^{-(f_{m-1}(x_i) + \gamma_{jm})}})\\
+0 &= \sum_{x_i \in R_{jm}} (p - y_i)
 \end{align}
 ```
-$\sum_{x_i \in R_{jm}} (- y_i + \frac{1}{1 + e^{-(f_{m-1}(x_i) + \gamma_{jm})}})$
+
+The minimum for $\gamma_{jm}$ is the sum of the residuals.
 
 \newpage
+b)  For the MSE, the 2nd derivative will be a constant and thus the optimal weights will again be $\gamma_{jm} = \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}$. We show this below:
 
-b)  For the MSE, since the 1st derivative is a constant, the 2nd derivative will be zero, thus the optimal weights will again be $\gamma_{jm} = \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}$.
+```{=latex}
+\begin{align}
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1} + \gamma_{jm}) &= \frac{d^2}{d^2\gamma_{jm}}[\frac{1}{2} \sum_{x_i \in R_{jm}} (y_i - (f_{m-1}(x_i) + \gamma_{jm}))^2]\\
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1} + \gamma_{jm}) &= \frac{d}{d\gamma_{jm}} [\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i)) - n_{jm} \gamma_{jm}] \\
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1} + \gamma_{jm}) &= - n_{jm} < 0
+\end{align}
+```
 
 For the binomial log-likelihood, we first take the 2nd derivative below.
