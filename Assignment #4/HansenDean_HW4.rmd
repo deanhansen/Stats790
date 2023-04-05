@@ -14,54 +14,198 @@ linestretch: 1.5
 ---
 
 ```{r, include=FALSE, message=FALSE, warning=FALSE}
-library(psychTools)
 library(ggplot2)
 library(tidymodels)
-library(dbarts)
+library(tidyverse)
+library(GGally)
+library(DALEXtra)
 ```
 
 \newpage
+
 ## Question #1
 
-\tiny
-```{r}
-epi_bfi <- epi.bfi
+The inspiration for the following workflow comes from Julia Silge's blog post found [here](https://juliasilge.com/blog/palmer-penguins/), and the prostate cancer dataset comes from the ESL textbook (introduced on page 3). The prostate cancer predictors are described below (table borrowed from [here](https://web.stanford.edu/class/stats191/notebooks/Multiple_linear_regression.html)). Our goal is to predict the response variable lpsa, which is continuous, using the eight predictor variables.
 
-#plot
-psych::pairs.panels(epi_bfi[,1:5])
+|                   |                                                            |
+|:------------------------|:---------------------------------------------|
+| **Variable**      | **Description**                                            |
+| lcavol            | (log) Cancer Volume                                        |
+| lweight           | (log) Weight                                               |
+| age               | Patient age                                                |
+| lbph              | (log) Vening Prostatic Hyperplasia                         |
+| svi               | Seminal Vesicle Invasion                                   |
+| lcp               | (log) Capsular Penetration                                 |
+| gleason           | Gleason score (how easily glands are identified in tissue) |
+| pgg45             | Percent of Gleason score 4 or 5                            |
+| lpsa (response\*) | (log) Prostate Specific Antigen                            |
 
-#Preprocessing
-df_rec <- recipe(epiE ~ ., data = epi_bfi)
+```{r, eval=FALSE}
+## get the data and clean it
+url <- "https://hastie.su.domains/ElemStatLearn/datasets/prostate.data"
+df_prostate <- read.table(file = url, 
+                          sep = "\t",
+                          header = TRUE) %>% 
+  select(-X, -train) %>%
+  as_tibble()
 
-#BART
-df_spec <- 
-  parsnip::bart() %>% 
-  set_engine("dbarts") %>% 
-  set_mode("regression")
-
-#Workflow
-df_wf <- 
-  workflow() %>% 
-  add_recipe(df_rec) %>% 
-  add_model(df_spec)
-
-#cross-validation for resamples
-set.seed(1)
-df_folds <- vfold_cv(epi_bfi)
-
-#Resampling for the accuracy metrics
-set.seed(2)
-df_rs <- df_wf %>% 
-  fit_resamples(resamples = df_folds)
-
-#Computes the accuracy metrics  
-collect_metrics(df_rs)
+df_prostate_scaled <- df_prostate
+df_prostate_scaled[1:8] <- scale(df_prostate_scaled[1:8], TRUE, TRUE)
 ```
-\normalsize
 
+Create some summary plots of the data.
+
+```{r, eval=FALSE}
+## pairs plot using GGally
+GGally::ggpairs(df_prostate_scaled, 
+        lower = list(continuous = wrap("points", alpha = 0.1, size = 0.1), 
+                             combo ="facethist", 
+                             discrete = "facetbar", 
+                             na =  "na"))
+```
+
+Plot age against the lpsa.
+
+```{r, eval=FALSE}
+ggplot(df_prostate, aes(x = age, y = lpsa, color = svi)) +
+  geom_point()
+```
+
+Below we setup the train and test data splits.
+
+```{r, eval=FALSE}
+## the data comes with a train/test column
+## we will use our own splits
+## based on data info in ESL - scale predictors before fitting
+
+data_split <- initial_split(df_prostate, prop = 0.7)
+train_data <- training(data_split)
+testing_data <- testing(data_split)
+```
+
+Setup our recipe for BART using dbarts engine.
+
+```{r, eval=FALSE}
+bart_recipe  <- (
+  recipe(lpsa ~ ., data = train_data)
+  |> step_center(all_numeric())
+  |> step_scale(all_numeric())
+  |> prep()
+)
+
+bart_mod <- (
+  bart(mode = "regression",
+             trees = tune())
+  |> set_engine(engine = "dbarts")
+)
+print(bart_mod)
+
+bart_wflow <- (
+  workflow()
+  |> add_model(bart_mod)
+  |> add_recipe(bart_recipe)
+)
+```
+
+Tune the BART regression model recipe.
+
+```{r, message=FALSE, eval=FALSE}
+tt <- tune_grid(object = bart_wflow,
+                grid = 2,
+                resamples = vfold_cv(train_data),
+                metrics   = metric_set(rmse),
+                control = control_grid(save_pred = TRUE)
+                )
+
+cc <- collect_metrics(tt)
+cp <- collect_predictions(tt)
+
+show_best(tt)
+ss <- select_best(tt)
+
+bm <- finalize_model(bart_mod, select_best(tt))
+bm_fit <- fit(bm, lpsa ~ ., data = train_data)
+```
+
+Create an explainer object for the BART model.
+
+```{r, eval=FALSE}
+explainer_bart <- 
+  explain_tidymodels(
+    bm_fit, 
+    data = train_data,
+    y = train_data$lpsa)
+
+set.seed(101)
+shap_boost <- predict_parts(explainer = explainer_bart, 
+                            new_observation = train_data[1,],
+                            type = "shap",
+                            B = 1)
+```
+
+Plot the shap_boost object to get variable importance and vip_boost.
+
+```{r, eval=FALSE}
+plot(shap_boost)
+vip_bart <- model_parts(explainer_bart)
+plot(vip_bart)
+```
 
 \newpage
+
 ## Question #2
 
+a)  First we derive the optimal weight for each tree, $\gamma_{jm}$, for the MSE (note: we assume there are $n_{jm}$ elements in the $R_{jm}$ terminal region). As shown below, the optimal weight is the average residual in each terminal node.
 
+
+```{=latex}
+\begin{align}
+\frac{d}{d\gamma_{jm}} L(y_i, f_{m-1} + \gamma_{jm}) &= \frac{d}{d\gamma_{jm}}[\frac{1}{2} \sum_{x_i \in R_{jm}} (y_i - (f_{m-1}(x_i) + \gamma_{jm}))^2]\\
+0 &= \sum_{x_i \in R_{jm}} (y_i - (f_{m-1}(x_i) + \gamma_{jm})) \\
+0 &= \sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i) - \gamma_{jm}) \\
+0 &= \sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i)) - n_{jm} \gamma_{jm} \\
+n_{jm} \gamma_{jm} &= \sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i)) \\
+\gamma_{jm} &= \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}
+\end{align}
+```
+
+As per piazza, instead of the deviance we can use the log-likelihood as a loss function. For binary classification, we only need to define the probability of success, which comes from fitting the tree model and applying the logit transformation. We define $z = f_{m-1}(x_i) + \gamma_{jm}$ to simplify notation and $p = \frac{1}{1 + e^{-z}} = \frac{e^{z}}{1 + e^{z}}$ as our probability of success. Below we derive the optimal weight under the log-likelihood loss function.
+
+```{=latex}
+\begin{align}
+\frac{d}{d\gamma_{jm}} L(y_i, f_{m-1}(x_i) + \gamma_{jm}) &= \frac{d}{d\gamma_{jm}}[ - \sum_{x_i \in R_{jm}} y_i \text{log}(p) + (1 - y_i) \text{log}(1-p)]\\
+&= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i \text{log}(p) - (1 - y_i) \text{log}(1-p)] \\
+&= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i \text{log}(p) + y_i \text{log}(1-p) - \text{log}(1-p)] \\
+&= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i (\text{log}(p) - \text{log}(1-p)) - \text{log}(1-p)] \\
+&= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i \text{log}(\frac{p}{1-p}) - \text{log}(1-p)]
+\end{align}
+```
+
+We have the following identities:
+
+```{=latex}
+\begin{align}
+\text{log}(1-p)&=\text{log}(1-\frac{e^{z}}{1 + e^{z}})=\text{log}(\frac{1}{1 + e^{z}})=-\text{log}(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})\\
+\text{log}(\frac{p}{1-p})&=\text{log}(p) - \text{log}(1-p) = \text{log}(e^z)=f_{m-1}(x_i) + \gamma_{jm}
+\end{align}
+```
+
+
+Plugging this back into the last line, we can take the derivative to find the optimal weight as follows:
+
+```{=latex}
+\begin{align}
+0 &= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i (f_{m-1}(x_i) + \gamma_{jm}) + \text{log}(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})]\\
+0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}})\\
+0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{1}{1 + e^{-(f_{m-1}(x_i) + \gamma_{jm})}})\\
+0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{1}{1 + e^{-(f_{m-1}(x_i) + \gamma_{jm})}})\\
+\end{align}
+```
+
+$\sum_{x_i \in R_{jm}} (- y_i + \frac{1}{1 + e^{-(f_{m-1}(x_i) + \gamma_{jm})}})$
+
+\newpage
+b) For the MSE, since the 1st derivative is a constant, the 2nd derivative will be zero, thus the optimal weights will again be $\gamma_{jm} = \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}$.
+
+For the binomial log-likelihood, we first take the 2nd derivative below.
 
