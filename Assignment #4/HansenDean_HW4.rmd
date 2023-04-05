@@ -25,23 +25,24 @@ library(DALEXtra)
 
 ## Question #1
 
-The inspiration for the following workflow comes from Julia Silge's blog post found [here](https://juliasilge.com/blog/palmer-penguins/), and the prostate cancer dataset comes from the ESL textbook (introduced on page 3). The prostate cancer predictors are described below (table borrowed from [here](https://web.stanford.edu/class/stats191/notebooks/Multiple_linear_regression.html)). Our goal is to predict the response variable lpsa, which is continuous, using the eight predictor variables.
+The prostate cancer dataset, introduced on page 3 of ESL, comes from a 1989 paper on prostate specific antigens found [here](https://pubmed.ncbi.nlm.nih.gov/2468795/). There are 97 observations, 8 predictor variables and one response variable, lpsa. A detailed description of each variable can be found below (taken from [here](https://rdrr.io/cran/ElemStatLearn/man/prostate.html)). Some of this workflow, specifically the model tuning, comes from an R-blogger post by Selcuk Disci linked [here](https://www.r-bloggers.com/2022/12/the-effect-of-childhood-education-on-wealth-modeling-with-bayesian-additive-regression-trees-bart/).
 
 |                   |                                                            |
 |:------------------------|:---------------------------------------------|
 | **Variable**      | **Description**                                            |
-| lcavol            | (log) Cancer Volume                                        |
-| lweight           | (log) Weight                                               |
-| age               | Patient age                                                |
-| lbph              | (log) Vening Prostatic Hyperplasia                         |
-| svi               | Seminal Vesicle Invasion                                   |
-| lcp               | (log) Capsular Penetration                                 |
-| gleason           | Gleason score (how easily glands are identified in tissue) |
-| pgg45             | Percent of Gleason score 4 or 5                            |
-| lpsa (response\*) | (log) Prostate Specific Antigen                            |
+| lcavol            | log cancer volume                                          |
+| lweight           | log prostate weight                                        |
+| age               | patient age in years                                       |
+| lbph              | log of the amount of benign prostatic hyperplasia          |
+| svi               | seminal vesicle invasion                                   |
+| lcp               | log of capsular penetration                                |
+| gleason           | Gleason score of how easily glands are identified in tissue|
+| pgg45             | percent of Gleason score 4 or 5                            |
+| lpsa (response\*) | log prostate specific antigen                              |
 
-```{r, eval=FALSE}
-## get the data and clean it
+We download the prostate cancer dataset from the ESL website. The predictors are all numeric, so we scale them to have mean zero and unit variance prior to fitting our tree model (in our recipe). Since we have few variables and no categorical data, the data processing step is straightforward.
+
+```{r}
 url <- "https://hastie.su.domains/ElemStatLearn/datasets/prostate.data"
 df_prostate <- read.table(file = url, 
                           sep = "\t",
@@ -53,10 +54,9 @@ df_prostate_scaled <- df_prostate
 df_prostate_scaled[1:8] <- scale(df_prostate_scaled[1:8], TRUE, TRUE)
 ```
 
-Create some summary plots of the data.
+Using GGally, we created a pairs plot. From the resulting plot, we see some variables like lcavol and svi are highly correlated with the response variable lpsa. There is high correlation between some predictiors like lcavol and lcp.
 
-```{r, eval=FALSE}
-## pairs plot using GGally
+```{r, message=FALSE, echo=FALSE}
 GGally::ggpairs(df_prostate_scaled, 
         lower = list(continuous = wrap("points", alpha = 0.1, size = 0.1), 
                              combo ="facethist", 
@@ -64,28 +64,24 @@ GGally::ggpairs(df_prostate_scaled,
                              na =  "na"))
 ```
 
-Plot age against the lpsa.
+Most patients in this dataset are >60 years older, and tend to have prostate cancers with larger volumes. We can see this in the below plot, where points are colored based on the cancer volume.
 
-```{r, eval=FALSE}
-ggplot(df_prostate, aes(x = age, y = lpsa, color = svi)) +
-  geom_point()
+```{r, echo=FALSE}
+ggplot(df_prostate, aes(x = age, y = lpsa, color = lcavol)) +
+  geom_point() +
+  theme_bw() +
+  scale_color_continuous(type = "viridis")
 ```
 
-Below we setup the train and test data splits.
+I am interested in Bayesian methods, so I chose to fit a Bayesian Additive Regression Tree (BART) to the prostate cancer dataset. The BART algorithm is an ensemble technique which uses priors as model regularization (i.e node depth).
 
-```{r, eval=FALSE}
-## the data comes with a train/test column
-## we will use our own splits
-## based on data info in ESL - scale predictors before fitting
+We setup our model and recipe below. To fit the BART model, we use the dbarts engine found in parsnip.
 
+```{r, message=FALSE}
 data_split <- initial_split(df_prostate, prop = 0.7)
 train_data <- training(data_split)
 testing_data <- testing(data_split)
-```
 
-Setup our recipe for BART using dbarts engine.
-
-```{r, eval=FALSE}
 bart_recipe  <- (
   recipe(lpsa ~ ., data = train_data)
   |> step_center(all_numeric())
@@ -94,11 +90,14 @@ bart_recipe  <- (
 )
 
 bart_mod <- (
-  bart(mode = "regression",
-             trees = tune())
+  parsnip::bart(mode = "regression",
+                trees = tune(),
+                prior_terminal_node_coef = tune(),
+                prior_terminal_node_expo = tune(),
+                prior_outcome_range = tune()
+    )
   |> set_engine(engine = "dbarts")
 )
-print(bart_mod)
 
 bart_wflow <- (
   workflow()
@@ -107,47 +106,42 @@ bart_wflow <- (
 )
 ```
 
-Tune the BART regression model recipe.
+Next we fit the BART model and tune the hyperparameters which are number of trees, prior terminal node coefficient, exponent and variance (decided to tune the defaults). Further, since this is a regression problem, we use the RMSE as our loss function.
 
 ```{r, message=FALSE, eval=FALSE}
 tt <- tune_grid(object = bart_wflow,
-                grid = 2,
+                grid = 25,
+                metrics = metric_set(rmse),
                 resamples = vfold_cv(train_data),
-                metrics   = metric_set(rmse),
                 control = control_grid(save_pred = TRUE)
                 )
 
 cc <- collect_metrics(tt)
 cp <- collect_predictions(tt)
-
-show_best(tt)
 ss <- select_best(tt)
-
-bm <- finalize_model(bart_mod, select_best(tt))
+bm <- finalize_model(bart_mod, ss)
 bm_fit <- fit(bm, lpsa ~ ., data = train_data)
 ```
 
-Create an explainer object for the BART model.
+Using the DALEX package, we can see how the various predictors influence the lpsa and plot the results.
 
-```{r, eval=FALSE}
-explainer_bart <- 
-  explain_tidymodels(
-    bm_fit, 
-    data = train_data,
-    y = train_data$lpsa)
+```{r, message=FALSE}
+explainer_bart <- explain_tidymodels(bm_fit,
+                                     data = train_data %>% select(-lpsa),
+                                     y = train_data$lpsa)
 
-set.seed(101)
 shap_boost <- predict_parts(explainer = explainer_bart, 
-                            new_observation = train_data[1,],
+                            new_observation = train_data,
                             type = "shap",
                             B = 1)
+vip_bart <- model_parts(explainer_bart)
 ```
 
 Plot the shap_boost object to get variable importance and vip_boost.
 
 ```{r, eval=FALSE}
+par(mfrow = c(1,2))
 plot(shap_boost)
-vip_bart <- model_parts(explainer_bart)
 plot(vip_bart)
 ```
 
