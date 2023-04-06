@@ -190,8 +190,8 @@ We have the following identities:
 
 ```{=latex}
 \begin{align}
-\text{log}(1-p)&=\text{log}(1-\frac{e^{z}}{1 + e^{z}})=\text{log}(\frac{1}{1 + e^{z}})=-\text{log}(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})\\
-\text{log}(\frac{p}{1-p})&=\text{log}(p) - \text{log}(1-p) = \text{log}(e^z)=f_{m-1}(x_i) + \gamma_{jm}
+\text{log}(1-p)&=\text{log}(1-\frac{e^{z} }{1 + e^{z}})=\text{log}(\frac{1}{1 + e^{z}})=-\text{log}(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})\\
+\text{log}(\frac{p}{1-p})&=\text{log}(p) - \text{log}(1-p) = \text{log}(e^z) = f_{m-1}(x_i) + \gamma_{jm}
 \end{align}
 ```
 
@@ -201,21 +201,43 @@ Plugging this back into the last line, we can take the derivative to find the op
 \begin{align}
 0 &= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i (f_{m-1}(x_i) + \gamma_{jm}) + \text{log}(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})]\\
 0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}})\\
-0 &= \sum_{x_i \in R_{jm}} (p - y_i)
+0 &= \sum_{x_i \in R_{jm}} (p - y_i)\\
+0 &= \sum_{x_i \in R_{jm}} (y_i - p)
 \end{align}
 ```
 
-The minimum for $\gamma_{jm}$ is the sum of the residuals.
+The minimum for $\gamma_{jm}$ is the sum of the residuals, $\gamma_{jm} = \sum_{x_i \in R_{jm}} (y_i - p)$.
 
 \newpage
-b)  For the MSE, the 2nd derivative will be a constant and thus the optimal weights will again be $\gamma_{jm} = \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}$. We show this below:
+b) The general form of the 2nd order Taylor polynomial of the loss function is going to be:
 
 ```{=latex}
 \begin{align}
-\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1} + \gamma_{jm}) &= \frac{d^2}{d^2\gamma_{jm}}[\frac{1}{2} \sum_{x_i \in R_{jm}} (y_i - (f_{m-1}(x_i) + \gamma_{jm}))^2]\\
-\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1} + \gamma_{jm}) &= \frac{d}{d\gamma_{jm}} [\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i)) - n_{jm} \gamma_{jm}] \\
-\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1} + \gamma_{jm}) &= - n_{jm} < 0
+L(y_i, f_{m-1}(x_i) + \gamma_{jm}) \approx
+L(y_i, f_{m-1}(x_i)) + gamma_{jm} \frac{d}{df_{m-1}}L(y_i, f_{m-1}(x_i)) + \frac{gamma_{jm}^2}{2!}\frac{d^2}{d^2f_{m-1}}L(y_i, f_{m-1}(x_i))
 \end{align}
 ```
 
-For the binomial log-likelihood, we first take the 2nd derivative below.
+For the MSE, the 2nd derivative will be a constant and thus the optimal weights will again be $\gamma_{jm} = \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}$. This is because the term $\frac{h^2}{2!}f''(x) = \frac{- n_{jm} \gamma^2}{2!}$ will vanish when we take the first derivative. We show below that indeed the 2nd derivative is equal to $- n_{jm}$ for MSE loss function.
+
+```{=latex}
+\begin{align}
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1}(x_i) + \gamma_{jm}) &= \frac{d^2}{d^2\gamma_{jm}}[\frac{1}{2} \sum_{x_i \in R_{jm}} (y_i - (f_{m-1}(x_i) + \gamma_{jm}))^2]\\
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1}(x_i) + \gamma_{jm}) &= \frac{d}{d\gamma_{jm}} [\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i)) - n_{jm} \gamma_{jm}] \\
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1}(x_i) + \gamma_{jm}) &= - n_{jm} < 0 \text{ } \forall \ x_i
+\end{align}
+```
+
+For the binomial log-likelihood, we need to find the 2nd order Taylor polynomial of our loss function and then differentiate this with respect to gamma. To do this, we need to calculate the 2nd derivative of the loss function in part a). We drop the sum here for convenience. 
+
+```{=latex}
+\begin{align}
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1}(x_i) + \gamma_{jm})  &= \frac{d}{d\gamma_{jm}} [y_i - p(x_i)]\\
+&= \frac{d}{d\gamma_{jm}} [y_i - \frac{e^{z}}{1 + e^{z}}]\\
+&= - \frac{d}{d\gamma_{jm}} \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}}\\
+&= - \frac{d}{d\gamma_{jm}} \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}}\\
+&= - [\frac{(e^{f_{m-1}(x_i)+ \gamma_{jm}})(1 + e^{f_{m-1}(x_i) + \gamma_{jm}}) - (e^{f_{m-1}(x_i)+ \gamma_{jm}})^2}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}]
+\end{align}
+```
+
+
