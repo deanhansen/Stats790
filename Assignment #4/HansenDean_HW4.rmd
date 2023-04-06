@@ -201,12 +201,11 @@ Plugging this back into the last line, we can take the derivative to find the op
 \begin{align}
 0 &= \frac{d}{d\gamma_{jm}}[\sum_{x_i \in R_{jm}} - y_i (f_{m-1}(x_i) + \gamma_{jm}) + \text{log}(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})]\\
 0 &= \sum_{x_i \in R_{jm}} (- y_i + \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}})\\
-0 &= \sum_{x_i \in R_{jm}} (p - y_i)\\
-0 &= \sum_{x_i \in R_{jm}} (y_i - p)
+0 &= \sum_{x_i \in R_{jm}} (p - y_i)
 \end{align}
 ```
 
-The minimum for $\gamma_{jm}$ is the sum of the residuals, $\gamma_{jm} = \sum_{x_i \in R_{jm}} (y_i - p)$.
+The minimum for $\gamma_{jm}$ is the sum of the residuals, $\gamma_{jm} = \sum_{x_i \in R_{jm}} (p-y_i)$. Meaning we should adjust the output at each terminal node by the sum of the difference between the observed value and predicted probability $p(x_i)$ for each point $x_i$ belonging to that terminal node.
 
 \newpage
 b) The general form of the 2nd order Taylor polynomial of the loss function is going to be:
@@ -214,11 +213,11 @@ b) The general form of the 2nd order Taylor polynomial of the loss function is g
 ```{=latex}
 \begin{align}
 L(y_i, f_{m-1}(x_i) + \gamma_{jm}) \approx
-L(y_i, f_{m-1}(x_i)) + gamma_{jm} \frac{d}{df_{m-1}}L(y_i, f_{m-1}(x_i)) + \frac{gamma_{jm}^2}{2!}\frac{d^2}{d^2f_{m-1}}L(y_i, f_{m-1}(x_i))
+L(y_i, f_{m-1}(x_i)) + \gamma_{jm} \frac{d}{df_{m-1}}L(y_i, f_{m-1}(x_i)) + \frac{\gamma_{jm}^2}{2!}\frac{d^2}{d^2f_{m-1}}L(y_i, f_{m-1}(x_i))
 \end{align}
 ```
 
-For the MSE, the 2nd derivative will be a constant and thus the optimal weights will again be $\gamma_{jm} = \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}$. This is because the term $\frac{h^2}{2!}f''(x) = \frac{- n_{jm} \gamma^2}{2!}$ will vanish when we take the first derivative. We show below that indeed the 2nd derivative is equal to $- n_{jm}$ for MSE loss function.
+For the MSE, the 2nd derivative will be a constant and thus the optimal weights will again be $\hat{\gamma_{jm}} = \frac{\sum_{x_i \in R_{jm}} (y_i - f_{m-1}(x_i))}{n_{jm}}$. This is because the term $\frac{h^2}{2!}f''(x) = \frac{- n_{jm} \gamma^2}{2!}$ will vanish when we take the first derivative. We show below that indeed the 2nd derivative is equal to $- n_{jm}$ for MSE loss function.
 
 ```{=latex}
 \begin{align}
@@ -228,16 +227,33 @@ For the MSE, the 2nd derivative will be a constant and thus the optimal weights 
 \end{align}
 ```
 
-For the binomial log-likelihood, we need to find the 2nd order Taylor polynomial of our loss function and then differentiate this with respect to gamma. To do this, we need to calculate the 2nd derivative of the loss function in part a). We drop the sum here for convenience. 
+\newpage
+For the binomial log-likelihood, we need to find the 2nd order Taylor polynomial of our loss function and then differentiate this with respect to gamma. To do this, we need to calculate the 2nd derivative of the loss function in part a) - note that we drop the sum here for convenience. 
 
 ```{=latex}
 \begin{align}
-\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1}(x_i) + \gamma_{jm})  &= \frac{d}{d\gamma_{jm}} [y_i - p(x_i)]\\
-&= \frac{d}{d\gamma_{jm}} [y_i - \frac{e^{z}}{1 + e^{z}}]\\
-&= - \frac{d}{d\gamma_{jm}} \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}}\\
-&= - \frac{d}{d\gamma_{jm}} \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}}\\
-&= - [\frac{(e^{f_{m-1}(x_i)+ \gamma_{jm}})(1 + e^{f_{m-1}(x_i) + \gamma_{jm}}) - (e^{f_{m-1}(x_i)+ \gamma_{jm}})^2}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}]
+\frac{d^2}{d^2\gamma_{jm}} L(y_i, f_{m-1}(x_i) + \gamma_{jm})  &= \frac{d}{d\gamma_{jm}} [p - y_i]\\
+&= \frac{d}{d\gamma_{jm}} [\frac{e^{z}}{1 + e^{z}} - y_i]\\
+&= \frac{d}{d\gamma_{jm}} \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}}\\
+&= \frac{d}{d\gamma_{jm}} \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}}\\
+&= \frac{(e^{f_{m-1}(x_i)+ \gamma_{jm}})(1 + e^{f_{m-1}(x_i) + \gamma_{jm}}) - (e^{f_{m-1}(x_i)+ \gamma_{jm}})^2}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}\\
+&= \frac{e^{f_{m-1}(x_i)+ \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}} - \frac{(e^{f_{m-1}(x_i)+ \gamma_{jm}})^2}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}\\
+&= \frac{e^{f_{m-1}(x_i)+ \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}} \frac{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}}{1 + e^{f_{m-1}(x_i) + \gamma_{jm}}} - \frac{(e^{f_{m-1}(x_i)+ \gamma_{jm}})^2}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}\\
+&=  \frac{e^{f_{m-1}(x_i)+ \gamma_{jm}} + (e^{f_{m-1}(x_i)+ \gamma_{jm}})^2 - (e^{f_{m-1}(x_i)+ \gamma_{jm}})^2}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}\\
+&=  \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}\\
+&=  \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})^2}\\
+&=  \frac{e^{f_{m-1}(x_i) + \gamma_{jm}}}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})} \frac{1}{(1 + e^{f_{m-1}(x_i) + \gamma_{jm}})}\\
+&=  \frac{e^{z}}{(1 + e^{z})} \frac{1}{(1 + e^{z})}\\
+&=  p(1-p)
 \end{align}
 ```
 
+When we take the first derivative of our second order Taylor polynomial and set this to 0, the general solution for $\gamma$ will be $-\frac{L'}{L''}$ (identical to $a+bx+\frac{c}{2}x^2$ where $f'(x)= 0 \implies x =\frac{-b}{c}$). Thus, we already know the first and second derivatives and can solve the weight to be:
 
+```{=latex}
+\begin{align}
+\hat{\gamma_{jm}}= \frac{\sum_{x_i \in R_{jm}} (y_i-p(x_i))}{\sum_{x_i \in R_{jm}} p(x_i) (1-p(x_i))}
+\end{align}
+```
+
+The output value then for leaf, $\gamma_{jm}$, will be the sum of the residuals divided the sum of $p(1-p)$, where $p$ are the predicted probabilities for each point $x_i$ that fall into the terminal node.
