@@ -1,46 +1,42 @@
 ## create a bootstrap sample
-bootstrap_tree <- function(data) {
-  boot_index <- sample(x=nrow(data), size=nrow(data), replace=TRUE) 
-  boot_data <- housing[boot_index,]
-  oob_data <- housing[-boot_index,]
-  return(list("boot_index"=boot_index, "boot_data"=boot_data, "oob_data"=oob_data))
+bootstrap_data <- function(data) {
+  data <- as.data.frame(data)
+  boot_index <- sample(x=nrow(data), replace=TRUE) 
+  train_data <- data[boot_index,]
+  oob_data <- data[-boot_index,]
+  return(list("train_data"=train_data, "oob_data"=oob_data))
 }
 
-## grow a single tree using bootstrapped data
+## grow a tree using bootstrapped data
 grow_tree <- function(formula, data, mtry) {
   
   # get the target variable
   target_name <- all.vars(formula)[1]
   
-  boot_df$boot_data[, !names(boot_df$boot_data) %in% target_name]
-  
-  # create bootstrap sample then get subset of names
-  boot_data <- bootstrap_tree(data)$boot_data
-  boot_names <- names(boot_data[, !names(boot_data) %in% target_name])
-  sample_names <- sample(x=boot_names, size=mtry, replace=FALSE)
+  # split data
+  boot_data <- bootstrap_data(data)
+  train_data <- boot_data$train_data
+  oob_data <- boot_data$oob_data
+
+  # get subset of names
+  train_names <- names(train_data[, !names(train_data) %in% target_name])
+  sample_names <- sample(x=train_names, size=mtry, replace=FALSE)
   
   # create new formula with subset of features
   formula_new <- as.formula(paste0(target_name, " ~ ", paste0(sample_names, collapse=" + ")))
   
   # fit a regression tree with subset of features - minsplit is 5 to match randomForest settings
-  boot_tree <- rpart(formula=formula_new, data=boot_df$boot_data, control=c(minsplit=5L))
+  tree <- rpart(formula=formula_new, data=train_data, control=c(minsplit=5L))
   
-  return(list("tree"=boot_tree, "data"=boot_df, "names"=sample_names))
+  # get oob error
+  tree_pred <- predict(tree, newdata=oob_data)
+  tree_rsme <- sqrt(sum((oob_data[,target_name] - tree_pred)^2)/dim(oob_data)[1])
+
+  return(list("tree"=tree, "oob_pred"=tree_pred, "oob_rmse"=tree_rsme, "train_data"=train_data, "oob_data"=oob_data))
 }
 
 
-## get oob error
-oob_error <- function(boot_tree, data) {
-  oobpredict(boot_tree, boot_df$oob_data)
-}
 
-## get the SSE for each variable
-
-## choose variable with smallest value
-
-## split the data using the feature name and split value
-
-## remove the column used to split from name variable
 
 
 # y <- housing$median_house_value
