@@ -1,0 +1,92 @@
+set.seed(1) ## reproducibility
+library(randomForest)
+library(tidyverse)
+library(tidymodels)
+library(vip)
+library(DALEXtra)
+
+# adults <- read_csv(file="./data/adults.csv")
+# adults$isGT50K <- factor(adults$isGT50K)
+# adults_splits <- initial_split(adults)
+# adults_training <- training(adults_splits)
+# adults_testing  <- testing(adults_splits)
+
+adults_training <- read_csv(file="./data/adults_training.csv")
+adults_testing  <- read_csv(file="./data/adults_testing.csv")
+adults_training$isGT50K <- factor(adults_training$isGT50K)
+adults_testing$isGT50K <- factor(adults_testing$isGT50K)
+
+# Using default parameters
+rf_fit_classification <- randomForest(isGT50K ~ ., data=adults_training, ntrees=100)
+rf_pred <- predict(rf_fit_classification, newdata=adults_testing)
+accuracy <- sum(rf_pred == adults_testing$isGT50K)/length(rf_pred)
+paste("Accuracy:", accuracy) # Accuracy: 0.86620030107146
+plot(rf_fit_classification)
+
+# Using tidy models
+rf_recipe <- 
+  recipe(isGT50K ~ ., data = adults_training)
+
+rf_mod <- 
+  rand_forest(mtry = tune(), min_n = tune(), trees = tune()) %>% 
+  set_engine("randomForest") %>% 
+  set_mode("classification")
+
+rf_workflow <- 
+  workflow() %>% 
+  add_model(rf_mod) %>% 
+  add_recipe(rf_recipe)
+
+rf_folds <- vfold_cv(adults_training)
+rf_grid <- expand.grid(mtry = c(3,4,5), min_n = c(10,20,30), trees = c(100, 250, 500))
+
+fn <- "./rf_workflow_classification.rds"
+if (file.exists(fn)) {
+  tt <- readRDS(fn)
+} else {
+  system.time(rf_res <-
+                (tune_grid(
+                  object = rf_workflow,
+                  grid = rf_grid,
+                  resamples = rf_folds,
+                  metrics   = metric_set(accuracy, roc_auc),
+                  control = control_grid(verbose = TRUE, save_pred = TRUE))
+                )
+  )
+  saveRDS(rf_res, fn)
+}
+
+cm <- collect_metrics(rf_res)
+cp <- collect_predictions(rf_res)
+
+best_accuracy <- select_best(rf_res, "accuracy")
+best_roc_auc <- select_best(rf_res, "roc_auc")
+final_rf_accuracy <- finalize_model(rf_mod, best_accuracy)
+final_rf_roc_auc <- finalize_model(rf_mod, best_roc_auc)
+
+# write to a csv file
+# write_csv(cm, file="./metrics/rf_res_classification_cm.csv")
+# write_csv(cp, file="./metrics/rf_res_classification_cp.csv")
+
+final_rf_fit <- fit(final_rf_accuracy, isGT50K ~ ., data=adults_training)
+
+## variable importance plot
+vip(final_rf_fit)
+
+explainer_rf_fit <- 
+  explain_tidymodels(
+    final_rf_fit, 
+    data=adults_training,
+    y=adults_training$isGT50K
+  )
+
+set.seed(101)
+shap_boost <- predict_parts(explainer=explainer_rf_fit, 
+                            new_observation=adults_training[13,],
+                            type="shap",
+                            B=1)
+plot(shap_boost)
+
+vip_boost <- model_parts(explainer_rf_fit)
+plot(vip_boost)
+

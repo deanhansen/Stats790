@@ -10,87 +10,141 @@ output:
     toc: true
 fontsize: 11pt
 geometry: margin = 1in
+bibliography: stats790.bib
 linestretch: 1.5
 ---
 
 ```{r, include=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
-set.seed(123)
+set.seed(123) # reproducibility
 library(ggplot2)
 library(tidymodels)
 library(tidyverse)
 library(rpart)
 library(randomForest)
 library(reticulate)
+library(GGally)
 
-adults <- read_csv(file="./data/adults.csv")
-housing <- read_table(file="./data/housing.csv")
-adults_py <- r_to_py(adults)
-housing_py <- r_to_py(housing)
+housing_training <- read_csv(file="./data/housing_training.csv")
+housing_testing  <- read_csv(file="./data/housing_testing.csv")
+adults_training <- read_csv(file="./data/adults_training.csv")
+adults_testing  <- read_csv(file="./data/adults_testing.csv")
+```
+
+
+```{python, include=FALSE, eval=FALSE}
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import mean_squared_error, accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import GridSearchCV
+
+housing_training = pd.read_csv("./data/housing_training.csv")
+housing_testing  = pd.read_csv("./data/housing_testing.csv")
+adults_training = pd.read_csv("./data/adults_training.csv")
+adults_testing  = pd.read_csv("./data/adults_testing.csv")
 ```
 
 \newpage
 
 ## Introduction
 
-In this project, we code the Random Forest algorithm invented by Leo Breiman in 2001 from scratch in R ([source](https://link.springer.com/article/10.1023/a:1010933404324)). We will compare the randomForest package against our naive implementation of the algorithm using the California housing dataset described in the Dataset section. 
+In this project, we will compare the R randomForest and Python sci-kit learn implementations of the random forest algorithm. We will fit a regression and classification model using both libraries and compare their performance and various metrics of speed and prediction accuracy.
+
+\newpage
 
 ## Random Forest Algorithm
 
-The Random Forest algorithm is an enhancement to the bagging algorithm, also invented by Leo Breiman. One key difference between the two is when each decision tree is grown, a random subset of features are used to grow the tree at each terminal node. In bagging, the full set of features are used, whereas in a Random Forest, using a subset of features prevents correlation between the trees.
+The random forest algorithm was created by Leo Breiman, and can be thought of as an improvement to the bagging algorithm [@Breiman2001]. One key difference between random forests and bagging is when each tree is grown, only a random subset of features are used at each terminal node to split the data. Whereas in bagging, the full set of features are used at each binary split. The purpose of this change is to decrease the correlation among the collection of trees. Below we present the random forest algorithm found in the Elements of Statistical Learning (Second Edition) on page 588 [@esl].
 
-## Dataset
-
-The California housing dataset, found in section 10.14.1 of ESL, comes from the paper on "Sparse spatial autoregressions" found [here](https://www.sciencedirect.com/science/article/pii/S016771529600140X). There are $20,640$ observations, $8$ predictor variables and one response variable, median house value. A detailed description of each variable can be found below.
-
-|                   |                                                             |
-|:-------------------------|:---------------------------------------------|
-| **Variable**      | **Description**                                             |
-| median_income            | median income of California block                    |
-| housing_median_age           | median age of the house                          |
-| total_rooms               | aggregate total number of rooms                     |
-| total_bedrooms              | aggregate total number of bedrooms                |
-| population               | population of geographic block                       |
-| households               | number of houses                                     |
-| latitude           | latitude of geographic block                               |
-| longitude             | longitude of geographic block                           |
-| median_house_value (response\*) | median house value                            |
-
-We downloaded the California housing dataset from the Statlib website found [here](http://lib.stat.cmu.edu/datasets/). The features in this dataset are numeric, so we scale them to have mean zero and unit variance prior to fitting our random forest model. Since we have few variables and no categorical data, the data processing step is straightforward.
-
-First, we first and profile using tidymodels out of the box implementation of randomForest using the ranger engine.
-
-```{r, message=FALSE, eval=FALSE}
-housing_splits <- initial_split(housing)
-housing_training <- training(housing_splits)
-housing_testing  <- testing(housing_splits)
-
-rf_recipe <- 
-  recipe(median_house_value ~ ., data = housing_training)
-
-rf_mod <- 
-  rand_forest(mtry = tune(), trees = tune()) %>% 
-  set_engine("ranger") %>% 
-  set_mode("regression")
-
-rf_workflow <- 
-  workflow() %>% 
-  add_model(rf_mod) %>% 
-  add_recipe(rf_recipe)
-
-rf_folds <- vfold_cv(housing_training)
-
-rf_res <- 
-  rf_workflow %>% 
-  tune_grid(grid = 10,
-            control = control_grid(save_pred = TRUE),
-            metrics = metric_set(rmse, rsq, ccc),
-            resamples = rf_folds)
-
-best_rf_res <- select_best(rf_res, "rmse")
+```{r boxplot, echo=FALSE, out.height="80%", out.width="80%", fig.align="center", fig.cap='Random Forest algorithm'}
+knitr::include_graphics("rf_algo.png")
 ```
 
+Note: predictions are made by majority vote (classification) or by averaging the predicted value from each tree (regression).
+
+\newpage
+
+## Califonia Housing Dataset
+
+The \textbf{California housing} dataset, found in section 10.14.1 of ESL, comes from the paper on "Sparse spatial autoregressions" [@KelleyPace1997]. There are $20,640$ observations, $8$ predictor variables and one response variable, median house value. A detailed description of each variable can be found below.
+
+|                                 |                                    |
+|:--------------------------------|:-----------------------------------|
+| **Variable**                    | **Description**                    |
+| median_income                   | median income of California block  |
+| housing_median_age              | median age of the house            |
+| total_rooms                     | aggregate total number of rooms    |
+| total_bedrooms                  | aggregate total number of bedrooms |
+| population                      | population of geographic block     |
+| households                      | number of houses                   |
+| latitude                        | latitude of geographic block       |
+| longitude                       | longitude of geographic block      |
+| median_house_value (response\*) | median house value                 |
+
+We downloaded the California housing dataset from the Statlib website found [here](http://lib.stat.cmu.edu/datasets/). The Random Forest algorithm does not require feature scaling, so no data pre-processing is required.
+
+\newpage
+## Adults Dataset
+
+The \textbf{Adults} dataset comes from the UCI Machine Learning Repository [@UCI]. The dataset contains $45,170$ observations and $15$ features with information such as age, sex, hours of work per week which are used to classify whether an individual earns more than $50,000$ USD per year. The original dataset was sourced by Barry Becker from the US 1994 Census database. Further, a detailed description of each variable can be found below (description sourced from [@eren]).
+
+|               |                                            |
+|:-------------------------|:---------------------------------------------|
+| **Variable**  | **Description**                               |
+| age           | Peron's age                                      |
+| workclass     | Occupation sector (ex. private, federal government)       |
+| finalweight   | Estimate of population total where the individual is sourced from (i.e. similar observations should have similar weights based on Census data) |
+| education     | Highest level of education attained (ex. bachelors)     |
+| educationnum  | Years of education                            |
+| maritalstatus | Marital status (ex. divorced, widowed)        |
+| occupation    | Occupation title (ex. tech-support, farming-fishing)   |
+| relationship  | Relationship status (ex. wife, unmarried)     |
+| race          | Person's race (ex. white, asian-pac-islander)     |
+| sex           | Male or Female                     |
+| capitalgain   | Capital gains from the previous year       |
+| capitalloss   | Capital losses from the previous year           |
+| hoursperweek  | Number of hours worked per week  |
+| nativecountry | Country person was born (ex. Ireland, Cuba)    |
+| isGT50K (response\*) | $1$ if they earn more than $50,000$ USD per year and $0$ otherwise |
+\newpage
 
 
+## randomForest Approach
+
+First we create a random forest regression model using the California Housing dataset. The randomForest package can be used as the engine, so we will do it this way to make it easier to setup a tuning grid.
+
+Due to computing constraints, a small grid of values have been selected to make the algorithm comparisons.
+
+We adjust the above code and set the mode to classification, this time using the Adults dataset.
+
+<!-- We find that mtry = 4, trees = 500 and min_n = 10 are the best hyperparameters for the random forest model. -->
 
 
+\newpage
+## Scikit Learn Approach
+
+There are slight variations between the R and Python implementations, so we have tried to make them as similar as possible so a valid comparison can be made. We use the Scikit Learn library implementation of random forest to fit the regression and classification model [@scikit-learn].
+
+The randomforestclassifier did not accept the original dataset with strings, so it was converted using pandas to a set of dummy variables first using help from [here](https://stackoverflow.com/questions/30384995/randomforestclassfier-fit-valueerror-could-not-convert-string-to-float).
+
+
+\newpage
+## Fitted Model Comparisons
+
+Using the same default settings, randomForest had an accuracy of $86.62\%$ compared to $85.23\%$ for sci-kit learn for classification. For regression, sci-kit learn had a RMSE of $49397.93$ compared to $50829.69$ for randomForest.
+
+Further, sci-kit learn was significantly faster than the R implementation.
+
+\newpage
+## Conclusions
+
+From the comparisons, we see that the Python implementation is generally faster compared to the R approach. There are some potential pitfalls in this analysis that cause the outputted times to vary, this could be due to lack of parallelization, variation in internals of each algorithm and hyperparameter variation. We have tried to reduce the last piece by tuning both in R and Python first, then creating a final model that uses the same hyperparameter values.
+
+The out-of-bag error plots demonstrate the two approaches to be quite similar. Further, the predictions on the validation sets for both classification and regression appear to be similar up to a high order of floating point approximation.
+
+In conclusion, the choice between Python or R comes down to user preference.
+
+\newpage
+## References
 
