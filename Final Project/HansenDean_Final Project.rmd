@@ -58,7 +58,7 @@ In this project, we will compare the R randomForest and Python sci-kit learn imp
 The random forest algorithm was created by Leo Breiman, and can be thought of as an improvement to the bagging algorithm [@Breiman2001]. One key difference between random forests and bagging is when each tree is grown, only a random subset of features are used at each terminal node to split the data. Whereas in bagging, the full set of features are used at each binary split. The purpose of this change is to decrease the correlation among the collection of trees. Below we present the random forest algorithm found in the Elements of Statistical Learning (Second Edition) on page 588 [@esl].
 
 ```{r boxplot, echo=FALSE, out.height="80%", out.width="80%", fig.align="center", fig.cap='Random Forest algorithm'}
-knitr::include_graphics("rf_algo.png")
+knitr::include_graphics("pictures/rf_algo.png")
 ```
 
 Note: predictions are made by majority vote (classification) or by averaging the predicted value from each tree (regression).

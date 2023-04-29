@@ -14,12 +14,59 @@ housing_training <- read_csv(file="./data/housing_training.csv")
 housing_testing  <- read_csv(file="./data/housing_testing.csv")
 
 # Using default parameters (same as scikit learn)
+start <- Sys.time()
 rf_fit_regression <- randomForest(median_house_value ~ ., data=housing_training, ntrees=100)
+end <- Sys.time() - start
 rf_pred <- predict(rf_fit_regression, newdata=housing_testing)
 rmse <- sqrt(sum((rf_pred - housing_testing$median_house_value)^2)/length(rf_pred))
 paste("RMSE:", rmse) # RMSE: 50829.6852708863
 plot(rf_fit_regression)
 which.min(rf_fit_regression$mse) # 351
+
+# regression timings for randomForest
+doParallel::registerDoParallel()
+times_regression <- vector(mode="double", length=25L)
+for (i in 1:25) {
+  start_regression <- Sys.time()
+  randomForest(median_house_value ~ ., data=housing_training, ntrees=100)
+  end_regression <- Sys.time()
+  times_regression[i] <- end_regression - start_regression
+}
+
+r_regression_times <- as.data.frame(times_regression)
+write_csv(r_regression_times, "./metrics/r_regression_times.csv")
+
+# get model to explain specific example from validation set
+python_explainer_rf_fit <- explain_scikitlearn("python_regression.pkl",
+                                               data=housing_training[-1],
+                                               y=housing_training$median_house_value)
+
+r_explainer_rf_fit <- explain_tidymodels(rf_fit_regression, 
+                                       data=housing_training[-1],
+                                       y=housing_training$median_house_value)
+
+python_shap_boost <- predict_parts(explainer=python_explainer_rf_fit,
+                                   new_observation=housing_testing[1,-1],
+                                   type="shap",
+                                   B=10)
+
+r_shap_boost <- predict_parts(explainer=r_explainer_rf_fit,
+                              new_observation=housing_testing[1,-1],
+                              type="shap",
+                              B=10)
+plot(python_shap_boost)
+plot(r_shap_boost)
+
+# variable importance plots
+python_vip_boost <- model_parts(python_explainer_rf_fit)
+plot(python_vip_boost)
+
+r_vip_boost <- model_parts(r_explainer_rf_fit)
+plot(r_vip_boost)
+
+
+########################################################################################
+
 
 # Using tidymodels
 rf_recipe <- 
@@ -79,7 +126,6 @@ shap_boost <- predict_parts(explainer=explainer_rf_fit,
                             new_observation=housing_testing,
                             type="shap",
                             B=1)
-plot(shap_boost)
 
 vip_boost <- model_parts(explainer_rf_fit)
 plot(vip_boost)

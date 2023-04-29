@@ -4,6 +4,7 @@ library(tidyverse)
 library(tidymodels)
 library(vip)
 library(DALEXtra)
+library(stringi)
 
 # adults <- read_csv(file="./data/adults.csv")
 # adults$isGT50K <- factor(adults$isGT50K)
@@ -22,6 +23,51 @@ rf_pred <- predict(rf_fit_classification, newdata=adults_testing)
 accuracy <- sum(rf_pred == adults_testing$isGT50K)/length(rf_pred)
 paste("Accuracy:", accuracy) # Accuracy: 0.86620030107146
 plot(rf_fit_classification)
+
+# classification timings for randomForest
+doParallel::registerDoParallel()
+times_classification <- vector(mode="double", length=25L)
+for (i in 1:25) {
+  start_classification <- Sys.time()
+  randomForest(isGT50K ~ ., data=adults_training, ntrees=100)
+  end_classification <- Sys.time()
+  times_classification[i] <- end_classification - start_classification
+}
+
+r_classification_times <- as.data.frame(times_classification)
+write_csv(r_classification_times, "./metrics/r_classification_times.csv")
+
+# get model to explain specific example from validation set
+adults_training_dummies <- read_csv("./data/adults_training_dummies.csv") %>% select(-"...1")
+adults_testing_dummies <- read_csv("./data/adults_testing_dummies.csv") %>% select(-"...1")
+python_explainer_rf_fit <- explain_scikitlearn("python_classification.pkl",
+                                               data=adults_training_dummies,
+                                               y=ifelse(adults_training$isGT50K=="1",1,0))
+
+r_explainer_rf_fit <- explain_tidymodels(rf_fit_classification, 
+                                         data=select(adults_training, -isGT50K),
+                                         y=ifelse(adults_training$isGT50K=="1",1,0))
+
+python_shap_boost <- predict_parts(explainer=python_explainer_rf_fit,
+                                   new_observation=adults_testing_dummies[1,],
+                                   type="shap",
+                                   B=10)
+
+r_shap_boost <- predict_parts(explainer=r_explainer_rf_fit,
+                              new_observation=select(adults_testing, -isGT50K)[1,],
+                              type="shap",
+                              B=10)
+plot(python_shap_boost)
+plot(r_shap_boost)
+
+# variable importance plots
+python_vip_boost <- model_parts(python_explainer_rf_fit)
+plot(python_vip_boost)
+
+r_vip_boost <- model_parts(r_explainer_rf_fit)
+plot(r_vip_boost)
+
+################################################################################
 
 # Using tidy models
 rf_recipe <- 
