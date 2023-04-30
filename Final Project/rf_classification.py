@@ -43,24 +43,29 @@ accuracy_opt = accuracy_score(y_test, y_pred_opt)
 print("Accuracy:", accuracy_opt) # Accuracy: 0.8546887452404144
 print(confusion_matrix(y_pred_opt, y_test))
 
-
 # evalute the speed of code
 times_classification = []
+size_classification = []
+
+rf_classification = RandomForestClassifier()
 
 for i in range(25):
   start_classification = time.time()
   rf_classification.fit(adults_train, y_train)
   end_classification = time.time()
   times_classification.append(end_classification - start_classification)
+  t = pickle.dumps(rf_classification) # https://stackoverflow.com/questions/45601897/how-to-calculate-the-actual-size-of-a-fit-trained-model-in-sklearn
+  size_classification.append(sys.getsizeof(t))
   
-python_classification_times = pd.DataFrame(times_classification)
+python_classification_times = pd.DataFrame(list(zip(times_classification, size_classification)))
+python_classification_times.columns =['times', 'size']
 python_classification_times.to_csv("./metrics/python_classification_times.csv")
-
 
 # tune the rf model
 param_grid = {
     'n_estimators': [200,300,400,500],
-    'max_features' : [2,3,4,5]
+    'max_features' : [2,3,4,5],
+    'min_samples_leaf' : [10,20,30]
 }
 
 # tuning the min_samples gave a worse answer, adjusting only certain param now

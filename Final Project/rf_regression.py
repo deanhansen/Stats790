@@ -4,6 +4,7 @@ from sklearn.metrics import mean_squared_error
 import time
 import pickle
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+import sys
 
 
 housing_training = pd.read_csv("./data/housing_training.csv")
@@ -41,25 +42,30 @@ print("RMSE:", rmse_opt) # RMSE: 50925.63753101504
 
 # evalute the speed of code
 times_regression = []
+size_regression = []
+
+rf_regression = RandomForestRegressor()
 
 for i in range(25):
   start_regression = time.time()
   rf_regression.fit(housing_train, y_train)
   end_regression = time.time()
   times_regression.append(end_regression - start_regression)
-
-python_regression_times = pd.DataFrame(times_regression)
+  t = pickle.dumps(rf_regression) # https://stackoverflow.com/questions/45601897/how-to-calculate-the-actual-size-of-a-fit-trained-model-in-sklearn
+  size_regression.append(sys.getsizeof(t)) # sizes all the same
+  
+python_regression_times = pd.DataFrame(list(zip(times_regression, size_regression)))
+python_regression_times.columns =['times', 'size']
 python_regression_times.to_csv("./metrics/python_regression_times.csv")
 
-
 # tune the rf model
-param_grid = { 
+param_grid = {
     'n_estimators': [200,300,400,500],
-    'max_features' : [2,3,4,5]
+    'max_features' : [2,3,4,5],
+    'min_samples_leaf' : [10,20,30]
 }
 
 # tuning the min_samples gave a worse answer, adjusting only certain param now
 cv_rf_regression = GridSearchCV(estimator=rf_regression, param_grid=param_grid, cv=10)
 cv_rf_regression.fit(housing_train, y_train)
 cv_rf_regression.best_params_ #{'max_features': 5, 'min_samples_leaf': 10, 'n_estimators': 300}
-

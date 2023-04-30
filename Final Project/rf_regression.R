@@ -13,27 +13,40 @@ library(DALEXtra)
 housing_training <- read_csv(file="./data/housing_training.csv")
 housing_testing  <- read_csv(file="./data/housing_testing.csv")
 
-# Using default parameters (same as scikit learn)
-start <- Sys.time()
-rf_fit_regression <- randomForest(median_house_value ~ ., data=housing_training, ntrees=100)
-end <- Sys.time() - start
-rf_pred <- predict(rf_fit_regression, newdata=housing_testing)
+# using R defaults
+rf_regression <- randomForest(median_house_value ~ ., data=housing_training)
+rf_pred <- predict(rf_regression, newdata=housing_testing)
 rmse <- sqrt(sum((rf_pred - housing_testing$median_house_value)^2)/length(rf_pred))
-paste("RMSE:", rmse) # RMSE: 50829.6852708863
-plot(rf_fit_regression)
-which.min(rf_fit_regression$mse) # 351
+paste("RMSE:", rmse) # RMSE: 50719.3875768653
+plot(rf_regression)
+
+# using default parameters of scikit learn
+rf_regression_default <- randomForest(median_house_value ~ ., data=housing_training, ntrees=100)
+rf_pred_default <- predict(rf_regression_default, newdata=housing_testing)
+rmse_default <- sqrt(sum((rf_pred_default - housing_testing$median_house_value)^2)/length(rf_pred_default))
+paste("RMSE:", rmse_default) # RMSE: 50974.7547537137
+plot(rf_regression_default)
+
+# using hypertuned parameters from Python
+rf_regression_opt <- randomForest(median_house_value ~ ., data=housing_training, ntrees=500, mtry=5, nodesize=10)
+rf_pred_opt <- predict(rf_regression_opt, newdata=housing_testing)
+rmse_default <- sqrt(sum((rf_pred_opt - housing_testing$median_house_value)^2)/length(rf_pred_opt))
+paste("RMSE:", rmse_default) # RMSE: 48336.0260963631
+plot(rf_regression_opt)
 
 # regression timings for randomForest
-doParallel::registerDoParallel()
 times_regression <- vector(mode="double", length=25L)
+size_regression <- vector(mode="double", length=25L)
 for (i in 1:25) {
   start_regression <- Sys.time()
-  randomForest(median_house_value ~ ., data=housing_training, ntrees=100)
+  t <- randomForest(median_house_value ~ ., data=housing_training, ntrees=100)
   end_regression <- Sys.time()
   times_regression[i] <- end_regression - start_regression
+  size_regression[i] <- lobstr::obj_size(t)
+  rm(t)
 }
 
-r_regression_times <- as.data.frame(times_regression)
+r_regression_times <- tibble(times=times_regression, size=size_regression)
 write_csv(r_regression_times, "./metrics/r_regression_times.csv")
 
 # get model to explain specific example from validation set
@@ -68,42 +81,42 @@ plot(r_vip_boost)
 ########################################################################################
 
 # Using tidymodels
-rf_recipe <- 
-  recipe(median_house_value ~ ., data = housing_training)
-
-rf_mod <- 
-  rand_forest(mtry = tune(), min_n = tune(), trees = tune()) %>% 
-  set_engine("randomForest") %>% 
-  set_mode("regression")
-
-rf_workflow <- 
-  workflow() %>% 
-  add_model(rf_mod) %>% 
-  add_recipe(rf_recipe)
-
-rf_folds <- vfold_cv(housing_training)
-rf_grid <- expand.grid(mtry = c(3,4,5), min_n = c(10,20,30), trees = c(100, 250, 500))
-
-fn <- "./rf_workflow_regression.rds"
-if (file.exists(fn)) {
-  tt <- readRDS(fn)
-} else {
-  system.time(rf_res <-
-                (tune_grid(
-                    object = rf_workflow,
-                    grid = rf_grid,
-                    resamples = rf_folds,
-                    metrics   = metric_set(rmse),
-                    control = control_grid(verbose = TRUE, save_pred = TRUE))
-                 )
-              )
-  saveRDS(tt, fn)
-}
-cm <- collect_metrics(rf_res)
-cp <- collect_predictions(rf_res)
-
-best_rmse <- select_best(rf_res, "rmse")
-final_rf <- finalize_model(rf_mod, best_rmse)
-
-## write to a csv file
-## write_csv(cm, file="./rf_res_regression_cm.csv")
+# rf_recipe <- 
+#   recipe(median_house_value ~ ., data = housing_training)
+# 
+# rf_mod <- 
+#   rand_forest(mtry = tune(), min_n = tune(), trees = tune()) %>% 
+#   set_engine("randomForest") %>% 
+#   set_mode("regression")
+# 
+# rf_workflow <- 
+#   workflow() %>% 
+#   add_model(rf_mod) %>% 
+#   add_recipe(rf_recipe)
+# 
+# rf_folds <- vfold_cv(housing_training)
+# rf_grid <- expand.grid(mtry = c(3,4,5), min_n = c(10,20,30), trees = c(100, 250, 500))
+# 
+# fn <- "./rf_workflow_regression.rds"
+# if (file.exists(fn)) {
+#   tt <- readRDS(fn)
+# } else {
+#   system.time(rf_res <-
+#                 (tune_grid(
+#                     object = rf_workflow,
+#                     grid = rf_grid,
+#                     resamples = rf_folds,
+#                     metrics   = metric_set(rmse),
+#                     control = control_grid(verbose = TRUE, save_pred = TRUE))
+#                  )
+#               )
+#   saveRDS(tt, fn)
+# }
+# cm <- collect_metrics(rf_res)
+# cp <- collect_predictions(rf_res)
+# 
+# best_rmse <- select_best(rf_res, "rmse")
+# final_rf <- finalize_model(rf_mod, best_rmse)
+# 
+# write to a csv file
+# write_csv(cm, file="./rf_res_regression_cm.csv")

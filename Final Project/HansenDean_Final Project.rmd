@@ -31,7 +31,6 @@ adults_testing  <- read_csv(file="./data/adults_testing.csv")
 housing <- dplyr::union(housing_training, housing_testing)
 ```
 
-
 ```{python, include=FALSE, eval=FALSE}
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -52,22 +51,21 @@ adults_testing  = pd.read_csv("./data/adults_testing.csv")
 
 In this project, we will compare the R randomForest and Python sci-kit learn implementations of the random forest algorithm. We will fit a regression and classification model using both libraries and compare their performance and various metrics of speed and prediction accuracy.
 
-\newpage
-
 ## Random Forest Algorithm
 
-The random forest algorithm was created by Leo Breiman, and can be thought of as an improvement to the bagging algorithm [@Breiman2001]. One key difference between random forests and bagging is when each tree is grown, only a random subset of features are used at each terminal node to split the data. Whereas in bagging, the full set of features are used at each binary split. The purpose of this change is to decrease the correlation among the collection of trees. Below we present the random forest algorithm found in the Elements of Statistical Learning (Second Edition) on page 588 [@esl].
+The random forest algorithm was introduced by Leo Breiman in a 2001 paper titled "Random Forests" [@Breiman2001]. Similar to bagging, the random forest algorithm is a tree ensemble method that can applied to regression and classification problems. A key difference between random forests and bagging is how each tree is grown. In bagging, the full set of features are used whereas in random forests, a random subset of features are used at each terminal node to grow the tree. The main purpose of this change is to decrease the correlation present among the forest of trees. Below we show the random forest algorithm found in the Elements of Statistical Learning (Second Edition) on page 588 [@esl].
 
-```{r boxplot, echo=FALSE, out.height="80%", out.width="80%", fig.align="center", fig.cap='Random Forest algorithm'}
+```{r, echo=FALSE, out.height="80%", out.width="80%", fig.align="center", fig.cap='Random Forest algorithm'}
 knitr::include_graphics("pictures/rf_algo.png")
 ```
 
-Note: predictions are made by majority vote (classification) or by averaging the predicted value from each tree (regression).
-
 \newpage
+
 ## Califonia Housing Dataset
 
-The \textbf{California housing} dataset, found in section 10.14.1 of ESL, comes from the paper on "Sparse spatial autoregressions" [@KelleyPace1997]. There are $20,640$ observations, $8$ predictor variables and one response variable, median house value. A detailed description of each variable can be found below.
+The \textbf{California housing} dataset, found in section 10.14.1 of ESL, comes from the paper on "Sparse spatial autoregressions" [@KelleyPace1997]. There are $20,640$ observations, $8$ predictor variables and one response variable, median house value. We downloaded the California housing dataset from the Statlib website found [here](http://lib.stat.cmu.edu/datasets/). A detailed description of each variable can be found below.
+
+\
 
 |                                 |                                    |
 |:--------------------------------|:-----------------------------------|
@@ -82,60 +80,63 @@ The \textbf{California housing} dataset, found in section 10.14.1 of ESL, comes 
 | longitude                       | longitude of geographic block      |
 | median_house_value (response\*) | median house value                 |
 
-We downloaded the California housing dataset from the Statlib website found [here](http://lib.stat.cmu.edu/datasets/). The Random Forest algorithm does not require feature scaling, so no data pre-processing is required.
+\newpage
 
-```{r}
+From the following pairs plot, we see high correlations among certain features like total rooms/total bedrooms and population/households. One reason could be that areas with more households naturally have higher populations and houses with more bedrooms naturally have more rooms.
 
+\
+
+```{r, echo=FALSE, out.height="100%", out.width="100%", fig.align="center", fig.cap='Pairs plot of continous features'}
+knitr::include_graphics("pictures/housing_pairs.png")
 ```
 
 \newpage
+
 ## Adults Dataset
 
-The \textbf{Adults} dataset comes from the UCI Machine Learning Repository [@UCI]. The dataset contains $45,170$ observations and $15$ features with information such as age, sex, hours of work per week which are used to classify whether an individual earns more than $50,000$ USD per year. The original dataset was sourced by Barry Becker from the US 1994 Census database. Further, a detailed description of each variable can be found below (description sourced from [@eren]).
+The \textbf{Adults} dataset comes from the UCI Machine Learning Repository [@UCI]. There are $45,170$ observations and $15$ features in the dataset with information such as age, sex, hours of work per week which are used to classify whether an individual earns more than $50,000$ USD per year. The data was sourced by Barry Becker from the 1994 US Census database. Further, a detailed description of each variable can be found below (description sourced from [@eren]).
 
-|               |                                            |
+\
+
+|                      |                                                                                                                                                |
 |:-------------------------|:---------------------------------------------|
-| **Variable**  | **Description**                               |
-| age           | Peron's age                                      |
-| workclass     | Occupation sector (ex. private, federal government)       |
-| finalweight   | Estimate of population total where the individual is sourced from (i.e. similar observations should have similar weights based on Census data) |
-| education     | Highest level of education attained (ex. bachelors)     |
-| educationnum  | Years of education                            |
-| maritalstatus | Marital status (ex. divorced, widowed)        |
-| occupation    | Occupation title (ex. tech-support, farming-fishing)   |
-| relationship  | Relationship status (ex. wife, unmarried)     |
-| race          | Person's race (ex. white, asian-pac-islander)     |
-| sex           | Male or Female                     |
-| capitalgain   | Capital gains from the previous year       |
-| capitalloss   | Capital losses from the previous year           |
-| hoursperweek  | Number of hours worked per week  |
-| nativecountry | Country person was born (ex. Ireland, Cuba)    |
-| isGT50K (response\*) | $1$ if they earn more than $50,000$ USD per year and $0$ otherwise |
+| **Variable**         | **Description**                                                                                                                                |
+| age                  | Peron's age                                                                                                                                    |
+| workclass            | Occupation sector (ex. private, federal government)                                                                                            |
+| finalweight          | Estimate of population total where the individual is sourced from (i.e. similar observations should have similar weights based on Census data) |
+| education            | Highest level of education attained (ex. bachelors)                                                                                            |
+| educationnum         | Years of education                                                                                                                             |
+| maritalstatus        | Marital status (ex. divorced, widowed)                                                                                                         |
+| occupation           | Occupation title (ex. tech-support, farming-fishing)                                                                                           |
+| relationship         | Relationship status (ex. wife, unmarried)                                                                                                      |
+| race                 | Person's race (ex. white, asian-pac-islander)                                                                                                  |
+| sex                  | Male or Female                                                                                                                                 |
+| capitalgain          | Capital gains from the previous year                                                                                                           |
+| capitalloss          | Capital losses from the previous year                                                                                                          |
+| hoursperweek         | Number of hours worked per week                                                                                                                |
+| nativecountry        | Country person was born (ex. Ireland, Cuba)                                                                                                    |
+| isGT50K (response\*) | $1$ if they earn more than $50,000$ USD per year and $0$ otherwise                                                                             |
+
 \newpage
 
-```{r}
+From the following pairs plot, we see the continuous features are mostly uncorrelated. Surprisingly, age and hours of work per week are only weakly correlated. It would make sense that senior employees work longer hours than junior employees but the data suggest this may not hold. Further, years of education and capital gains are only weakly correlated as well, indicating that more educated people do not necessarily make better financial decisions (ex. in stock trading).
 
+\
+
+```{r, echo=FALSE, out.height="95%", out.width="95%", fig.align="center", fig.cap='Pairs plot of continous features'}
+knitr::include_graphics("pictures/adults_pairs.png")
 ```
 
-## randomForest Approach
-
-First we create a random forest regression model using the California Housing dataset. The randomForest package can be used as the engine, so we will do it this way to make it easier to setup a tuning grid.
-
-Due to computing constraints, a small grid of values have been selected to make the algorithm comparisons.
-
-We adjust the above code and set the mode to classification, this time using the Adults dataset.
-
-<!-- We find that mtry = 4, trees = 500 and min_n = 10 are the best hyperparameters for the random forest model. -->
-
-
 \newpage
-## Scikit Learn Approach
 
-There are slight variations between the R and Python implementations, so we have tried to make them as similar as possible so a valid comparison can be made. We use the Scikit Learn library implementation of random forest to fit the regression and classification model [@scikit-learn].
+## Using Python and Scikit Learn
+
+There are slight variations between the R and Python implementations, so we have them as similar as possible so a valid comparison can be made. We use the Scikit Learn library implementation of random forest to fit the regression and classification model [@scikit-learn].
 
 The randomforestclassifier did not accept the original dataset with strings, so it was converted using pandas to a set of dummy variables first using help from [here](https://stackoverflow.com/questions/30384995/randomforestclassfier-fit-valueerror-could-not-convert-string-to-float).
 
 \tiny
+
 ```{python, eval=FALSE}
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
@@ -198,11 +199,13 @@ cv_rf_regression = GridSearchCV(estimator=rf_regression, param_grid=param_grid, 
 cv_rf_regression.fit(housing_train, y_train)
 cv_rf_regression.best_params_ #{'max_features': 5, 'min_samples_leaf': 10, 'n_estimators': 300}
 ```
+
 \normalsize
 
 Similarly we apply the above approach to classification.
 
 \tiny
+
 ```{python, eval=FALSE}
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -266,24 +269,75 @@ cv_rf_classification = GridSearchCV(estimator=rf_classification, param_grid=para
 cv_rf_classification.fit(adults_train, y_train)
 cv_rf_classification.best_params_ #{'max_features': 5, 'min_samples_leaf': 10, 'n_estimators': 300}
 ```
+
 \normalsize
 
 \newpage
-## Fitted Model Comparisons
 
-Using the same default settings, randomForest had an accuracy of $86.62\%$ compared to $85.23\%$ for sci-kit learn for classification. For regression, sci-kit learn had a RMSE of $49397.93$ compared to $50829.69$ for randomForest.
+## Using R and randomForest
 
-Further, sci-kit learn was significantly faster than the R implementation.
+```{r, eval=FALSE}
+# using R defaults
+rf_regression <- randomForest(median_house_value ~ ., data=housing_training)
+rf_pred <- predict(rf_regression, newdata=housing_testing)
+rmse <- sqrt(sum((rf_pred - housing_testing$median_house_value)^2)/length(rf_pred))
+paste("RMSE:", rmse) # RMSE: 50719.3875768653
+plot(rf_regression)
+
+# using default parameters of scikit learn
+rf_regression_default <- randomForest(median_house_value ~ ., data=housing_training, ntrees=100)
+rf_pred_default <- predict(rf_regression_default, newdata=housing_testing)
+rmse_default <- sqrt(sum((rf_pred_default - housing_testing$median_house_value)^2)/length(rf_pred_default))
+paste("RMSE:", rmse_default) # RMSE: 50974.7547537137
+plot(rf_regression_default)
+
+# using hypertuned parameters from Python
+rf_regression_opt <- randomForest(median_house_value ~ ., data=housing_training, ntrees=500, mtry=5, nodesize=10)
+rf_pred_opt <- predict(rf_regression_opt, newdata=housing_testing)
+rmse_default <- sqrt(sum((rf_pred_opt - housing_testing$median_house_value)^2)/length(rf_pred_opt))
+paste("RMSE:", rmse_default) # RMSE: 48336.0260963631
+plot(rf_regression_opt)
+```
 
 \newpage
+
+## Model Fit Comparisons
+
+We fit six models in total - three for regression and three for classification using the California Housing and Adults datasets respectively. The first model we fit used the default randomForest and scikit learn implementations. The second model we fit matched the `n_trees` argument in randomForest to the `n_estimators` default in scikit learn (as this is the only difference between the two implementations).  
+
+The three models we fit were the same for regression ad implemented used 1) default settings 2) same settings 3) tuned settings.
+
+| Language |   Package    |    Problem     | Tuned Model? |  Metric  |  Score   |
+|:--------:|:------------:|:--------------:|:------------:|:--------:|:--------:|
+|    R     | randomForest |   Regression   |     Yes      |   RSME   | 48336.03 |
+|  Python  | scikit learn |   Regression   |      No      |   RSME   | 48703.06 |
+|    R     | randomForest | Classification |      No      | Accuracy |  86.57%  |
+|  Python  | scikit learn | Classification |      No      | Accuracy |  85.80%  |
+
+From the first chart below, we see Python was about $8$ times faster for regression and $3.5$ times faster for classification compared to R. From the second chart, we see the fitted model object size in Python was on average $71.43 \%$ smaller for regression and $84.94 \%$ smaller for classification compared to R.
+
+```{r, echo=FALSE, out.height="85%", out.width="85%", fig.align="center", fig.cap='Time to fit random forest models in Python and R'}
+knitr::include_graphics("pictures/time_comparison.png")
+```
+
+```{r, echo=FALSE, out.height="85%", out.width="85%", fig.align="center", fig.cap='Object size in Mb of random forest models in Python and R'}
+knitr::include_graphics("pictures/size_comparison.png")
+```
+
+\newpage
+
 ## Conclusions
 
-From the comparisons, we see that the Python implementation is generally faster compared to the R approach. There are some potential pitfalls in this analysis that cause the outputted times to vary, this could be due to lack of parallelization, variation in internals of each algorithm and hyperparameter variation. We have tried to reduce the last piece by tuning both in R and Python first, then creating a final model that uses the same hyperparameter values.
+The random forest algorithm is a popular tree based ensemble technique that can be used for regression and classification problems. We chose to compare a Python and R implementation of the random forest algorithm as they are currently the most popular languages in data science.
+
+Based on our results, we see the Python implementation is generally faster compared to R but tends to have lower prediction accuracy. 
+
+Some issues in our this analysis that cause the outputted times to vary, this could be due to lack of parallelization, variation in internals of each algorithm and hyperparameter variation. We have tried to reduce the last piece by tuning both in R and Python first, then creating a final model that uses the same hyperparameter values.
 
 The out-of-bag error plots demonstrate the two approaches to be quite similar. Further, the predictions on the validation sets for both classification and regression appear to be similar up to a high order of floating point approximation.
 
 In conclusion, the choice between Python or R comes down to user preference.
 
 \newpage
-## References
 
+## References
