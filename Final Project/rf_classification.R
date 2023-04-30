@@ -113,26 +113,3 @@ final_rf_roc_auc <- finalize_model(rf_mod, best_roc_auc)
 # write to a csv file
 # write_csv(cm, file="./metrics/rf_res_classification_cm.csv")
 # write_csv(cp, file="./metrics/rf_res_classification_cp.csv")
-
-final_rf_fit <- fit(final_rf_accuracy, isGT50K ~ ., data=adults_training)
-
-## variable importance plot
-vip(final_rf_fit)
-
-explainer_rf_fit <- 
-  explain_tidymodels(
-    final_rf_fit, 
-    data=adults_training,
-    y=adults_training$isGT50K
-  )
-
-set.seed(101)
-shap_boost <- predict_parts(explainer=explainer_rf_fit, 
-                            new_observation=adults_training[13,],
-                            type="shap",
-                            B=1)
-plot(shap_boost)
-
-vip_boost <- model_parts(explainer_rf_fit)
-plot(vip_boost)
-

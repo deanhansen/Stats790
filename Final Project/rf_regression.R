@@ -67,7 +67,6 @@ plot(r_vip_boost)
 
 ########################################################################################
 
-
 # Using tidymodels
 rf_recipe <- 
   recipe(median_house_value ~ ., data = housing_training)
@@ -108,24 +107,3 @@ final_rf <- finalize_model(rf_mod, best_rmse)
 
 ## write to a csv file
 ## write_csv(cm, file="./rf_res_regression_cm.csv")
-
-final_rf_fit <- fit(final_rf, median_house_value ~ ., data=housing_training)
-
-## variable importance plot
-vip(final_rf_fit)
-
-explainer_rf_fit <- 
-  explain_tidymodels(
-    final_rf_fit, 
-    data=housing_training,
-    y=housing_training$median_house_value
-  )
-
-set.seed(101)
-shap_boost <- predict_parts(explainer=explainer_rf_fit, 
-                            new_observation=housing_testing,
-                            type="shap",
-                            B=1)
-
-vip_boost <- model_parts(explainer_rf_fit)
-plot(vip_boost)
