@@ -1,9 +1,10 @@
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 import time
 import pickle
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
 import sys
 
 
@@ -18,6 +19,7 @@ y_test =  housing_testing['median_house_value']  # target variable
 # defaults for python
 rf_regression = RandomForestRegressor(random_state=1)
 rf_regression.fit(housing_train, y_train)
+pickle.dump(rf_regression, open("python_regression.pkl", "wb"), protocol = 2)
 y_pred = rf_regression.predict(housing_test)
 mse = mean_squared_error(y_test, y_pred)
 rmse = np.sqrt(mse)
@@ -35,12 +37,11 @@ print("RMSE:", rmse_default) # RMSE: 49397.928321747604
 rf_regression_opt = RandomForestRegressor(max_features=5, min_samples_leaf=10, n_estimators=500, random_state=1)
 rf_regression_opt.fit(housing_train, y_train)
 y_pred_opt = rf_regression_opt.predict(housing_test)
-pickle.dump(rf_regression__opt, open("python_regression.pkl", "wb"), protocol = 2)
 mse_opt = mean_squared_error(y_test, y_pred_opt)
 rmse_opt = np.sqrt(mse_opt)
 print("RMSE:", rmse_opt) # RMSE: 50925.63753101504
 
-# evalute the speed of code
+# evaluate the speed of code
 times_regression = []
 size_regression = []
 

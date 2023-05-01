@@ -50,33 +50,30 @@ r_regression_times <- tibble(times=times_regression, size=size_regression)
 write_csv(r_regression_times, "./metrics/r_regression_times.csv")
 
 # get model to explain specific example from validation set
-python_explainer_rf_fit <- explain_scikitlearn("python_regression.pkl",
-                                               data=housing_training[-1],
-                                               y=housing_training$median_house_value)
+python_explainer_regression <- explain_scikitlearn("python_regression.pkl",
+                                                   data=housing_training[-1],
+                                                   y=housing_training$median_house_value)
 
-r_explainer_rf_fit <- explain_tidymodels(rf_fit_regression, 
-                                       data=housing_training[-1],
-                                       y=housing_training$median_house_value)
+r_explainer_regression <- explain_tidymodels(rf_regression_opt,
+                                             data=housing_training[-1],
+                                             y=housing_training$median_house_value)
 
-python_shap_boost <- predict_parts(explainer=python_explainer_rf_fit,
+python_shap_boost <- predict_parts(explainer=python_explainer_regression,
                                    new_observation=housing_testing[1,-1],
                                    type="shap",
-                                   B=10)
+                                   B=50)
 
-r_shap_boost <- predict_parts(explainer=r_explainer_rf_fit,
+r_shap_boost <- predict_parts(explainer=r_explainer_regression,
                               new_observation=housing_testing[1,-1],
                               type="shap",
-                              B=10)
-plot(python_shap_boost)
-plot(r_shap_boost)
+                              B=50)
 
 # variable importance plots
-python_vip_boost <- model_parts(python_explainer_rf_fit)
-plot(python_vip_boost)
-
-r_vip_boost <- model_parts(r_explainer_rf_fit)
-plot(r_vip_boost)
-
+python_vip_boost <- model_parts(python_explainer_regression)
+r_vip_boost <- model_parts(r_explainer_regression)
+plot(r_vip_boost, python_vip_boost) +
+  ggtitle("Mean variable-importance over 50 permutations", "") +
+  theme(text = element_text(size = 18))
 
 ########################################################################################
 

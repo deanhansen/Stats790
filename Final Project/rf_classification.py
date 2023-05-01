@@ -1,8 +1,11 @@
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 import time
 import pickle
+from sklearn.model_selection import GridSearchCV
+import sys
 
 adults_training = pd.read_csv("./data/adults_training.csv")
 adults_testing  = pd.read_csv("./data/adults_testing.csv")
@@ -43,7 +46,7 @@ accuracy_opt = accuracy_score(y_test, y_pred_opt)
 print("Accuracy:", accuracy_opt) # Accuracy: 0.8546887452404144
 print(confusion_matrix(y_pred_opt, y_test))
 
-# evalute the speed of code
+# evaluate the speed of code
 times_classification = []
 size_classification = []
 
