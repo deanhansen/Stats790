@@ -37,20 +37,6 @@ if (do_plots) {
 
 ggplot(housing, aes(longitude, latitude)) + geom_point(alpha = 0.5)
 
-## digression: spatial blocking
-housing_sf <- sf::st_as_sf(
-  housing,
-  coords = c("longitude", "latitude"),
-  ## Set CRS to WGS84
-  crs = 4326
-)
-plot(housing_sf)
-
-folds <- spatial_block_cv(housing_sf, v = 10)
-autoplot(folds)
-
-## spatial split??
-## how to handle geometry column?
 data_split <- initial_split(housing, prop = 3/4)
 train_data <- training(data_split)
 testing_data <- testing(data_split)
