@@ -3,3 +3,6 @@ This repository contains completed homework for STATS 790: Statistical Learning 
 
 # Structure of the Repo
 Under the assignments folder, there are four sub-folders, one for each assignment. My final project, including code and datasets, is found under the final_project folder.
+
+# About Me
+I am currently a graduate student at McMaster University studying count distributions.
