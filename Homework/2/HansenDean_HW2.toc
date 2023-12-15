@@ -1,0 +1,6 @@
+\contentsline {subsection}{Question \#1}{2}{section*.2}%
+\contentsline {subsection}{Question \#2}{7}{section*.3}%
+\contentsline {subsection}{Question 3 (ESL 3.6)}{9}{section*.4}%
+\contentsline {subsection}{Question 4 (ESL 3.19 - Ridge and Lasso only)}{10}{section*.5}%
+\contentsline {subsection}{Question 5 (ESL 3.28)}{11}{section*.6}%
+\contentsline {subsection}{Question 6 (ESL 3.30)}{11}{section*.7}%
